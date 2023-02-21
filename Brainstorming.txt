@@ -1,0 +1,179 @@
+
+#DESIGN PHILOSOPHY
+
+Finding elements in a modern web app is unstable because many things are dynamically loaded.
+When searching you should allow for some grace time, albeit not too long (5-10 sec max).
+When you want an element you generally expect it and therefore not finding it should throw an exception.
+We do want the flexibility to query for an element without exceptions, and then deciding what should happen.
+Interacting with an element should be robust and the element should try to re-establish its handle in case of staleness errors.
+
+public interface IFetchesElements
+{
+    bool TryFetch(By locator, out FetchResult result)
+    bool TryFetch(By locator, TimeSpan timeout, out FetchResult result)
+    IElement Fetch(By locator)
+    IElement Fetch(By locator, TimeSpan timeout)
+    bool TryFetchAll(By locator, out IElement[] elements)
+    bool TryFetchAll(By locator, TimeSpan timeout, out IElement[] elements)
+    IElement[] FetchAll(By locator)
+    IElement[] FetchAll(By locator, TimeSpan timeout)
+    ElementWaiter FetchWhen(By locator)
+    ElementWaiter FetchWhen(By locator, TimeSpan timeout)
+    ElementWaiter FetchAllWhen(By locator)
+    ElementWaiter FetchAllWhen(By locator, TimeSpan timeout)
+}
+
+ElementFactory
+{
+    public ElementFactory(ISearchContext context)
+    public ElementFactory(ISearchContext context, TimeSpan timeout)
+
+    public bool TryFetch(By locator, out FetchResult result)
+    public bool TryFetch(By locator, TimeSpan timeout, out FetchResult result)
+
+    public IElement Fetch(By locator)
+    public IElement Fetch(By locator, TimeSpan timeout)
+
+    // Returns false if no elements found and 'elements'-var is an empty array
+    public bool TryFetchAll(By locator, out IElement[] elements)
+    public bool TryFetchAll(By locator, TimeSpan timeout, out IElement[] elements)
+
+    public ElementWaiter TryFetchWhen(By locator)
+    public ElementWaiter TryFetchWhen(By locator, TimeSpan timeout)
+}
+
+// Is essentially a wrapper around WebDriverWait with some custom conditions
+ElementWaiter
+{
+    public ElementWaiter(ElementFactory factory, By locator, ISearchContext context, double timeout)
+    public ElementWaiter ButDoNotThrowIfNot() // Changes the behaviour so that no exception is thrown on timeout but instead null is returned
+
+    private WebDriverWait Waiter;
+
+    public IElement Exist()
+    public IElement DoesNotExist()
+    public IElement IsDisplayed()
+    public IElement IsNotDisplayed()
+    public IElement IsNotEnabled()
+    public IElement IsEnabled()
+    public IElement IsSelected()
+    public IElement IsNotSelected()
+    public IElement AttributeIsEqualTo()
+    public IElement AttributeStartsWith()
+    public IElement AttributeEndsWith()
+    public IElement AttributeContains()
+    public IElement ValueIsEqualTo()
+    public IElement ValueIsNotEqualTo()
+    public IElement ValueStartsWith()
+    public IElement ValueEndsWith()
+    public IElement ValueContains()
+    public IElement HasValue()
+}
+
+public class Element
+{
+    public Element(IWebElement, ElementFactory, OpenQA.By, ISearchContext) {}
+
+    public IWebElement WrappedElement {get;}
+    public ElementFactory WrappedFactory {get;}
+    public OpenQA.By ProducedBy {get;}
+    public ISearchContext RelatedContext {get;}
+
+    private IWebElement ReAcquireHandle() {}                // Used internally to reacquire the element if a StaleElementReferenceException is thrown when interacting with the element
+
+    public string GetTagName() {}                           // Proxy for IWebElement.TagName
+    public string GetText(removeWhitespace); {}             // Proxy for IWebElement.GetAttribute("textContent") || WHITESPACE: \t\n\v\f\r\u0020
+    public string GetHTML() {}                              // Proxy for IWebElement.GetAttribute("innerHTML")
+    public string GetId() {}                                // Proxy for IWebElement.GetAttribute("id")
+    public string GetName() {}                              // Proxy for IWebElement.GetAttribute("name")
+    public string GetValue() {}                             // Proxy for IWebElement.GetAttribute("value")
+    public string[] GetCssClasses() {}                      // Parses IWebElement.GetAttribute("class")
+    public string GetType() {}                              // Proxy for IWebElement.GetAttribute("type")
+    public string GetSource() {}                            // Proxy for IWebElement.GetAttribute("src")
+    public string GetTitle() {}                             // Proxy for IWebElement.GetAttribute("title")
+    public string GetMinLength() {}                         // Proxy for IWebElement.GetAttribute("minlength")
+    public string GetMaxLength() {}                         // Proxy for IWebElement.GetAttribute("maxlength")
+    public string[] GetAcceptedFileTypes() {}               // Proxy for IWebElement.GetAttribute("accepts")
+    public IDictionary<string,string> GetDataSet() {}       // Parses HTMLElement.dataset
+    public string[] GetAttributeNames() {}                  // Proxy for ExecuteScript("return arguments[0].GetAttributeNames();")
+    public IDictionary<string,string> GetAttributes() {}    // Parses ExecuteScript("return arguments[0].GetAttribute(NAME);")
+    public void ScrollIntoView() {}                         // Proxy for ExecuteScript("return arguments[0].scrollIntoView({block: 'center'})")
+    public Element[] GetChildren() {}                       // Proxy for ExecuteScript("return arguments[0].children")
+    public Element? GetParent() {}                          //
+    public Element? GetPreviousSibling() {}                 //
+    public Element? GetNextSibling() {}                     //
+
+    public bool IsHidden() {}                               // Proxy for IWebElement.GetAttribute("hidden");
+    public bool IsSelected() {}                             // Proxy for IWebElement.Selected;
+    public bool IsDisabled() {}                             // Proxy for IWebElement.GetAttribute("disabled");
+    public bool IsReadOnly() {}                             // Proxy for IWebElement.GetAttribute("readonly");
+    public bool IsRequired() {}                             // Proxy for IWebElement.GetAttribute("required");
+    public bool IsDisplayed() {}                            // Proxy for IWebElement.Displayed
+    public void Click(bool noRetry) {}                      // Proxy for IWebElement.Click(); noRetry means no continous clicking in case of StaleElementReferenceException errors
+
+    // Only relevant for certain form control elements (input,textarea,select)
+    // To find labels first check if the direct ancestor (parent) is a label. Otherwise search for labels where the for-attribute is equal to this element's id.
+    public bool HasLabels() {}                              // Returns false for anything that is not a form control element
+    public string[] GetLabels() {}                          // Returns an empty array for anything that is not a form control element
+
+    public List AsList() {}
+    public Table AsTable() {}
+    public TableRow AsTableRow() {}
+    public TextArea AsTextArea() {}
+    public Text AsText() {}
+    public Date AsDate() {}
+    public DateTime AsDateTime() {}
+    public Checkbox AsCheckbox() {}
+    public File AsFile() {}
+    public File AsMultiFile() {}
+    public Radio AsRadio() {}
+    public Select AsSelect() {}
+    public MultiSelect AsMultiSelect() {}
+}
+
+#NOTE
+
+What constitutes 'data' is dependent on context:
+- For the following elements all data means the 'value'-attribute: <button>, <data>, <input>, <li>, <meter>, <option>, <progress>, <param>
+- For all other elements, it means its 'innerText'-attribute.
+Getting and setting data is also element-dependent.
+Therefore each element-subclass is responsible for implementing their own SetData- and GetData-methods.
+
+## INTERFACES:
+ISetsSingleData<T>
+    - void SetData(T data)
+ISetsMultiData<T>
+    - void SetDataByText(T[] data)
+    - void SetDataByValue(T[] data)
+IHasOptions<T>
+    - T[] GetTextOptions()
+    - T[] GetValueOptions()
+IHasSingleData<T>
+    - T GetData()
+IHasMultiData<T>
+    - T[] GetAllData()
+IHasChildren
+    - IElement[] GetChildren()
+    - uint GetChildCount()
+
+## ELEMENTS:
+#Form elements:
+<textarea>                      = TextArea         : FormControl, ISetsSingleData<string>, IHasSingleData<string>
+<input type='date'>             = Date             : FormControl, ISetsSingleData<DateTime>, IHasSingleData<DateTime>
+<input type='datetime-local'>   = DateTime         : FormControl, ISetsSingleData<DateTime>, IHasSingleData<DateTime>
+<input type='checkbox'>         = Checkbox         : FormControl, ISetsSingleData<bool>, IHasSingleData<bool>
+<input type='file'>             = File             : FormControl, ISetsSingleData<FileInfo>, IHasSingleData<FileInfo>
+<input type='file' multiple>    = MultiFile        : FormControl, IHasMultiData<FileInfo>, ISetsMultiData<FileInfo>
+<input type='radio'>            = Radio            : FormControl, ISetsSingleData<string>, IHasSingleData<string>, IHasOptions<string>
+<select>                        = Select           : FormControl, IHasChildren, ISetsSingleData<string>, IHasSingleData<string>, IHasOptions<string>
+<select multiple='true'>        = MultiSelect      : FormControl, IHasChildren, IHasMultiData<string>, ISetsMultiData<string>, IHasOptions<string>
+#Others:
+<table>                         = Table            : Element
+    - TableRow[] GetColumns()
+    - TableRow[] GetRows()
+<tr>                            = TableRow         : Element, IHasChildren, IHasMultiData<string>
+<ul>/<ol>                       = List             : Element, IHasChildren, IHasMultiData<string>
+    - List[] GetNestedLists()
+
+Interaction exceptions:
+

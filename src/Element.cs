@@ -30,23 +30,17 @@ namespace TMech.Core
             JavaScriptExecutor = (IJavaScriptExecutor)wrappedElement.WrappedDriver;
         }
 
-        /// <summary>Represents the element</summary>
         public WebElement WrappedElement {get; private set;}
         public ElementFactory ProducedBy {get;}
         public By RelatedLocator {get;}
         public ISearchContext RelatedContext {get;}
-        public uint ActionAttempts {get; private set;} = 1;
+        public uint ActionAttempts {get; private set;} = 10;
 
         #region PRIVATE
 
         private readonly IJavaScriptExecutor JavaScriptExecutor;
         private readonly bool LocatedAsMultiple;
         private Element() {}
-
-        private void ReAcquireElementHandle()
-        {
-            WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
-        }
 
         private TResult RetryActionOnFailureInvoker<TResult>(string errorMessage, Func<TResult> action)
         {
@@ -68,11 +62,14 @@ namespace TMech.Core
                     System.Threading.Thread.Sleep(500);
                     if (LocatedAsMultiple) continue;
 
+                    // If the error is because the element reference is no longer valid then attempt to reacquire
                     if (delegateError is StaleElementReferenceException)
                     {
                         try
                         {
-                            ReAcquireElementHandle();
+                            // This could fail consistently until the timeout is reached if RelatedContext is another element
+                            // that no longer exists or is in an invalid state (obscured, hidden etc)
+                            WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
                         }
                         catch (WebDriverException reacquireError)
                         {
@@ -278,7 +275,7 @@ namespace TMech.Core
             string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the inner text value", ()=> {
                 string ElementText = WrappedElement.Text;
                 if (!removeAdditionalWhitespace) return ElementText;
-                return new Regex("[\t\n\v\f\r\u0020]").Replace(ElementText, "").Trim();
+                return new Regex("[\t\n\v\f\r]").Replace(ElementText, "").Trim();
             });
 
             return ReturnData;

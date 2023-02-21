@@ -11,7 +11,39 @@ namespace Tests
     [TestFixture]
     public class ElementFactoryTests
     {
-        private const string Category_Fetch = "Fetch";
+
+        private const string Category_Exists = "ElementFactory Exists";
+        [TestCase(Category=Category_Exists)]
+        public void Fetch_WebdriverContext_Exists()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+            
+            Stopwatch Timer = Stopwatch.StartNew();
+            bool Exists = ElementFactory.Exists(By.Id(JSElements.Context1Div1));
+            Timer.Stop();
+
+            Webdriver.Quit();
+            Assert.IsTrue(Exists);
+            Assert.Less(Timer.ElapsedMilliseconds, 300, "Expected it to be more or less instant to determine that the element exists");
+        }
+
+        [TestCase(Category=Category_Exists)]
+        public void Fetch_WebdriverContext_NotExists()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+            
+            Stopwatch Timer = Stopwatch.StartNew();
+            bool Exists = ElementFactory.Exists(By.Id("gnargle"));
+            Timer.Stop();
+
+            Webdriver.Quit();
+            Assert.IsFalse(Exists);
+            Assert.Less(Timer.ElapsedMilliseconds, 300, "Expected it to be more or less instant to determine that the element does not exist");
+        }
+
+        private const string Category_Fetch = "ElementFactory Fetch";
         [TestCase(Category=Category_Fetch)]
         public void Fetch_WebdriverContext_ImmediatelyAvailable()
         {
@@ -69,7 +101,7 @@ namespace Tests
             Assert.IsNull(TestElement);
         }
 
-        private const string Category_TryFetch_WebdriverContext = "TryFetch_WebdriverContext";
+        private const string Category_TryFetch_WebdriverContext = "ElementFactory TryFetch WebdriverContext";
         [TestCase(Category=Category_TryFetch_WebdriverContext)]
         public void TryFetch_WebdriverContext_ImmediatelyAvailable()
         {
@@ -93,7 +125,6 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            // Webdriver.ExecuteScript("CopyLastChildOfParentAndAppend(Elements.Context1());");
             Webdriver.ExecuteAsyncScript("arguments[arguments.length - 1]();await Wait(3000);CopyLastChildOfParentAndAppend(Elements.Context1());;");
 
             var Timer = Stopwatch.StartNew();
@@ -113,7 +144,6 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver, TimeSpan.FromSeconds(10.0d));
 
-            // Webdriver.ExecuteScript("CopyLastChildOfParentAndAppend(Elements.Context1());");
             Webdriver.ExecuteAsyncScript("arguments[arguments.length - 1]();await Wait(9000);CopyLastChildOfParentAndAppend(Elements.Context1());;");
 
             var Timer = Stopwatch.StartNew();
@@ -146,7 +176,7 @@ namespace Tests
             Assert.Greater(Timer.ElapsedMilliseconds, 4800, "Expected it to take at least 5 seconds before the fetch failed, since that is the default");
         }
 
-        private const string Category_TryFetch_ElementContext = "TryFetch_ElementContext";
+        private const string Category_TryFetch_ElementContext = "ElementFactory TryFetch ElementContext";
         [TestCase(Category=Category_TryFetch_ElementContext)]
         public void TryFetch_ElementContext_ImmediatelyAvailable()
         {
@@ -191,7 +221,7 @@ namespace Tests
             Assert.Greater(Timer.ElapsedMilliseconds, 4800, "Expected it to take at least 5 seconds before the fetch failed, since that is the default");
         }
 
-        private const string Category_TryFetchAll = "TryFetchAll";
+        private const string Category_TryFetchAll = "ElementFactory TryFetchAll";
         [TestCase(Category=Category_TryFetchAll)]
         public void TryFetchAll_WebdriverContext_ImmediatelyAvailable()
         {

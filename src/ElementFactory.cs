@@ -123,7 +123,7 @@ namespace TMech.Core
         #region TRY FETCH WHEN
 
         /// <summary>
-        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it matches certain conditions.
+        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
         /// </summary>
         public ElementWaiter TryFetchWhen(By locator)
         {
@@ -131,7 +131,7 @@ namespace TMech.Core
         }
 
         /// <summary>
-        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it matches certain conditions.
+        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
         /// </summary>
         public ElementWaiter TryFetchWhen(By locator, TimeSpan timeout)
         {
@@ -139,6 +139,14 @@ namespace TMech.Core
         }
 
         #endregion
+
+        /// <summary>Checks whether one or more elements exist that match the passed locator.</summary>
+        public bool Exists(By locator)
+        {
+            return SearchContext.FindElements(locator).Count > 0;
+        }
+
+        #region PRIVATE
 
         private Tuple<bool, Element[]> InternalTryFetchAll(By locator, TimeSpan timeout, uint threshold)
         {
@@ -188,5 +196,6 @@ namespace TMech.Core
             return new(false, null, LatestException);
         }
 
+        #endregion
     }
 }

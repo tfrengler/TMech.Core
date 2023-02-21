@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+
+    <script src="main.js" defer></script>
+</head>
+<body>
+
+    <section id="Context1">
+        <div id="Context1-Div1-Id" data-data1="Context1-Div1-Data1" data-data2="Context1-Div1-Data1">Context1-Div1-Text</div>
+        <div id="Context1-Div2-Id" data-data1="Context1-Div2-Data1" data-data2="Context1-Div2-Data1">Context1-Div2-Text</div>
+        <div id="Context1-Div3-Id" data-data1="Context1-Div3-Data1" data-data3="Context1-Div3-Data1">Context1-Div3-Text</div>
+    </section>
+
+    <section id="Context2">
+        <form action="" id="TestForm">
+
+            <fieldset id="Context2-Inputs">
+                <legend>INPUTS</legend>
+
+                <div>
+                    <label for="Context2-Button-Id">Context2-Button-Label</label>
+                    <input id="Context2-Button-Id" type="button" value="Context2-Button-Value" name="Context2-Button-Name" >
+                </div>
+                <div>
+                    <label for="Context2-InputText-Id">Context2-InputText-Label</label>
+                    <input id="Context2-InputText-Id" type="text" name="Context2-InputText-Name" value="Context2-InputText-Value" >
+                </div>
+                <div>
+                    <label for="Context2-Checkbox-Id">Context2-Checkbox-Label</label>
+                    <input id="Context2-Checkbox-Id" type="checkbox" name="Context2-Checkbox-Name" >
+                </div>
+                <div>
+                    <label for="Context2-File-Id">Context2-File-Label</label>
+                    <input id="Context2-File-Id" type="file" name="Context2-File-Name" >
+                </div>
+                <div>
+                    <label for="Context2-DateTime-Id">Context2-DateTime-Label</label>
+                    <input id="Context2-DateTime-Id" type="date" name="Context2-DateTime-Name" >
+                </div>
+                <div>
+                    <label for="Context2-DateTimeLocal-Id">Context2-DateTimeLocal-Label</label>
+                    <input id="Context2-DateTimeLocal-Id" type="datetime-local" name="Context2-DateTimeLocal-Name" >
+                </div>
+
+            </fieldset>
+
+            <fieldset id="Context2-Dropdown">
+                <legend>DROPDOWN</legend>
+                <label for="Context2-Select-Id">Context2-Select-Label</label>
+                <select id="Context2-Select-Id" name="Context2-Select-Name">
+                    <!-- <option id="Context2-Option-NIL" value="NIL">NIL</option> -->
+                    <option id="Context2-Option1-Id" value="Context2-Option1-Value">Context2-Option1-Text</option>
+                    <option id="Context2-Option2-Id" value="Context2-Option2-Value">Context2-Option2-Text</option>
+                    <option id="Context2-Option3-Id" value="Context2-Option3-Value">Context2-Option3-Text</option>
+                </select>
+            </fieldset>
+
+            <label for="Context2-Textarea1-Id">Context2-Textarea1-Label</label><br/>
+            <textarea id="Context2-Textarea-Id" name="Context2-Textarea1-Name" cols="30" rows="10"></textarea>
+
+        
+            <fieldset id="Context2-RadioButtons">
+                <legend>RADIO BUTTONS</legend>
+
+                <label for="Context2-Radio1-Id">Context2-Radio1-Label</label>
+                <input id="Context2-Radio1-Id" checked type="radio" name="Context2-Radio-Name" value="Context2-Radio1-Value"><br/>
+
+                <label for="Context2-Radio2-Id">Context2-Radio2-Label</label>
+                <input id="Context2-Radio2-Id" type="radio" name="Context2-Radio-Name" value="Context2-Radio2-Value"><br/>
+
+                <label for="Context2-Radio3-Id">Context2-Radio3-Label</label>
+                <input id="Context2-Radio3-Id" disabled type="radio" name="Context2-Radio-Name" value="Context2-Radio3-Value">
+
+            </fieldset>
+        </form>
+    </section>
+
+    <section id="Context3">
+        <div id="Context3-Div1-Id" data-data1="Context3-Div1-Data1" data-data2="Context3-Div1-Data2">Context3-Div1-Text</div>
+        <div id="Context3-Div2-Id" data-data1="Context3-Div2-Data1" data-data2="Context3-Div2-Data2">Context3-Div2-Text</div>
+        <div id="Context3-Div3-Id" data-data1="Context3-Div3-Data1" data-data2="Context3-Div3-Data2">
+            <span>Context3-Div3-Text</span>
+        </div>
+    </section>
+
+</body>
+</html>
+
+<!--
+
+Fetch
+TryFetch
+TryFetchAll
+TryFetchAll with threshold
+
+- WebDriver context, element(s) immediately available
+- WebDriver context, element(s) available after a while
+- WebDriver context, element(s) never available
+- Element context, element that is immediately available within context
+- Element context, element that is immediately available but outside context
+
+Click
+ScrollIntoView
+GetFormControlType
+GetAttributeNames
+GetAttributes
+GetDataSet
+GetHTML
+GetId
+GetTagName
+GetText
+GetValue
+IsEnabled
+IsDisplayed
+IsSelected
+
+IsDisplayed
+IsNotDisplayed
+IsNotEnabled
+IsEnabled
+IsSelected
+IsNotSelected
+AttributeIsEqualTo
+AttributeStartsWith
+AttributeEndsWith
+AttributeContains
+TextIsEqualTo
+TextIsNotEqualTo
+TextStartsWith
+TextEndsWith
+TextContains
+HasText
+
+- Element satisfy condition
+- Element does NOT satisfy condition
+
+-->

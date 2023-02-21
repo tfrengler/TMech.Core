@@ -38,6 +38,7 @@ namespace TMech.Core
 
         #region PRIVATE
 
+        private bool DoNotReacquireElementOnException;
         private readonly IJavaScriptExecutor JavaScriptExecutor;
         private readonly bool LocatedAsMultiple;
         private Element() {}
@@ -63,7 +64,7 @@ namespace TMech.Core
                     if (LocatedAsMultiple) continue;
 
                     // If the error is because the element reference is no longer valid then attempt to reacquire
-                    if (delegateError is StaleElementReferenceException)
+                    if (!DoNotReacquireElementOnException && delegateError is StaleElementReferenceException)
                     {
                         try
                         {
@@ -81,7 +82,7 @@ namespace TMech.Core
 
             string FinalErrorMessage = string.Empty;
             if (LatestException is not null) FinalErrorMessage = ":" + Environment.NewLine + "---------------| LAST EXCEPTION:" + Environment.NewLine + LatestException.Message;
-            throw new ElementActionException($"{errorMessage}. Element locator: {RelatedLocator.Mechanism} - {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)" + FinalErrorMessage);
+            throw new ElementInteractionException($"{errorMessage}. Element locator: {RelatedLocator.Mechanism} - {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)" + FinalErrorMessage);
         }
 
         #endregion
@@ -94,6 +95,17 @@ namespace TMech.Core
         public Element TryActionsThisManyTimes(uint attempts)
         {
             ActionAttempts = attempts > 0 ? attempts : 1;
+            return this;
+        }
+
+        /// <summary>
+        /// Disables the behaviour where if an action fails - and it is because a StaleElementReferenceException - it would try to reacquire the element reference again.<br/>
+        /// This can be beneficial if your locator is not precise enough, and there's a decent chance that another element that matches your locator would be fetched intstead, which can lead to undesired or hard to debug behaviour.
+        /// </summary>
+        /// <param name="attempts"></param>
+        public Element DoNotReacquireElementIfStale()
+        {
+            DoNotReacquireElementOnException = true;
             return this;
         }
 

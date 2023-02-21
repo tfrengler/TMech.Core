@@ -5,6 +5,7 @@ using OpenQA.Selenium.Chrome;
 using TMech.Core;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 
 namespace Tests
 {
@@ -358,6 +359,70 @@ namespace Tests
 
             Webdriver.Quit();
         }
+
+        #region ELEMENT STALENESS
+
+        private const string Category_Staleness = "Element Staleness";
+        [TestCase(Category=Category_Staleness)]
+        public void ReacquireElementOnStaleException()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out ExceptionDispatchInfo? Error);
+            Assert.True(Success);
+            Assert.NotNull(TestElement);
+            Assert.Null(Error);
+
+            Webdriver.ExecuteAsyncScript($@"
+                RemoveLastChildOfParent(Elements.Context1());
+                arguments[arguments.length - 1]();
+                await Wait(3000);
+                let NewElement = document.createElement('div');
+                NewElement.id = '{JSElements.Context1Div3}';
+                Elements.Context1().appendChild(NewElement);
+            ");
+
+            var Timer = Stopwatch.StartNew();
+            string ElementId = TestElement.GetId();
+            Timer.Stop();
+
+            Webdriver.Quit();
+            Assert.AreEqual(ElementId, JSElements.Context1Div3);
+            Assert.Greater(Timer.ElapsedMilliseconds, 3000, "Expected it to take around 3 seconds to reacquire the element due to the staleness");
+        }
+
+        [TestCase(Category=Category_Staleness)]
+        public void DoNotReacquireElementOnStaleException()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out ExceptionDispatchInfo? Error);
+            Assert.True(Success);
+            Assert.NotNull(TestElement);
+            Assert.Null(Error);
+
+            TestElement.DoNotReacquireElementIfStale();
+
+            Webdriver.ExecuteAsyncScript($@"
+                RemoveLastChildOfParent(Elements.Context1());
+                arguments[arguments.length - 1]();
+                await Wait(3000);
+                let NewElement = document.createElement('div');
+                NewElement.id = '{JSElements.Context1Div3}';
+                Elements.Context1().appendChild(NewElement);
+            ");
+
+            var Timer = Stopwatch.StartNew();
+            Assert.Throws<ElementInteractionException>(() => TestElement.GetId());
+            Timer.Stop();
+
+            Webdriver.Quit();
+            Assert.Greater(Timer.ElapsedMilliseconds, 3000, "Expected it to take around 3 seconds for the action to fail due to the staleness");
+        }
+
+        #endregion
 
         #endregion
     }

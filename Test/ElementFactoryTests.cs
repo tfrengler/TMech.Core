@@ -4,6 +4,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using TMech.Core;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 
 namespace Tests
 {

@@ -1,17 +1,17 @@
 using System;
 
-public class ElementActionException : TMechException
+public class ElementInteractionException : TMechException
 {
-    public ElementActionException()
+    public ElementInteractionException()
     {
     }
 
-    public ElementActionException(string message)
+    public ElementInteractionException(string message)
         : base(message)
     {
     }
 
-    public ElementActionException(string message, Exception inner)
+    public ElementInteractionException(string message, Exception inner)
         : base(message, inner)
     {
     }

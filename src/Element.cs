@@ -80,9 +80,12 @@ namespace TMech.Core
                 }
             }
 
-            string FinalErrorMessage = string.Empty;
-            if (LatestException is not null) FinalErrorMessage = ":" + Environment.NewLine + "---------------| LAST EXCEPTION:" + Environment.NewLine + LatestException.Message;
-            throw new ElementInteractionException($"{errorMessage}. Element locator: {RelatedLocator.Mechanism} - {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)" + FinalErrorMessage);
+            string FinalErrorMessage = $"{errorMessage}. Element locator: {RelatedLocator.Mechanism} - {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)";
+            
+            if (LatestException is not null)
+                throw new ElementInteractionException(FinalErrorMessage, LatestException);
+
+            throw new ElementInteractionException(FinalErrorMessage);
         }
 
         #endregion

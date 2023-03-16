@@ -60,9 +60,12 @@ namespace TMech.Core
 
             if (!ThrowExceptionOnTimeout) return false;
 
-            string FinalErrorMessage = string.Empty;
-            if (error is not null) FinalErrorMessage = ":" + Environment.NewLine + "---------------| LAST EXCEPTION:" + Environment.NewLine + error.SourceException.Message;
-            throw new TimeoutException($"Timed out ({Timeout}) trying to fetch element ({Locator.Mechanism} | {Locator.Criteria}) once {actionDescriptionForTimeout}{FinalErrorMessage}");
+            string FinalErrorMessage = $"Timed out ({Timeout}) trying to fetch element once {actionDescriptionForTimeout}: '{Locator.Mechanism}' | '{Locator.Criteria}'";
+
+            if (error is null)
+                throw new TimeoutException(FinalErrorMessage);
+
+            throw new TimeoutException(FinalErrorMessage, error.SourceException);
         }
 
         /// <summary>

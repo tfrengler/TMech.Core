@@ -2,25 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OpenQA.Selenium;
+using OpenQA.Selenium.DevTools.V106.Debugger;
 
 namespace TMech.Core
 {
-    /// <summary>Represents an HTML-element, acting as a wrapper for an IWebElement-instance. It is designed for ease of use and stability, and not for speed.<br/>
-    /// It is a base class, representing any HTML-element, and has methods that apply to (almost) all element types.<br/>
-    /// It is built around the idea that interacting with raw elements can often be unstable, and easily cause exceptions when attempting to interact with it.<br/>
-    /// Therefore interactions - such as clicking and/or reading out attributes etc - should be more robust, and not fail immediately. These methods will typically retry their actions before finally throwing an exception.<br/>
-    /// Also no methods that return data should return null unless specifically designed for it, and they should explicitly be marked as nullable.</summary>
+    /// <summary><para>
+    /// Represents an HTML-element, acting as a wrapper for an IWebElement-instance. Designed for ease of use and stability, with built-in retry mechanisms for all (inter)actions.<br/>
+    /// It is a base class, representing any HTML-element, and has methods that apply to (almost) all element types.</para>
+    /// <para>
+    /// It is built around the fact that interacting with elements on webpages can often be flaky due to the highly dynamic nature of modern webpages.<br/>
+    /// All interactions are retried on Selenium exceptions (configureable), and stale elements will be detected and reacquired (if possible).
+    /// </para>
+    /// NOTE: Reacquiring stale elements only works on THIS element! If the <see cref="RelatedContext"/> is another element, and that one is stale, you will get a <see cref="StaleElementReferenceException"/> as staleness cannot be resolved recursively.<br/>
+    /// In such a situation it is recommended to use a more precise locator that can get you a <see cref="Element"/>-instance that exists directly within the webdriver context.
+    /// </summary>
     public class Element
     {
         public Element(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
         {
-            if (wrappedElement is null) throw new ArgumentNullException(nameof(wrappedElement));
-            if (producedBy is null) throw new ArgumentNullException(nameof(producedBy));
-            if (relatedLocator is null) throw new ArgumentNullException(nameof(relatedLocator));
-            if (relatedContext is null) throw new ArgumentNullException(nameof(relatedContext));
+            Debug.Assert(wrappedElement is not null);
+            Debug.Assert(producedBy is not null);
+            Debug.Assert(relatedLocator is not null);
+            Debug.Assert(relatedContext is not null);
 
             WrappedElement = wrappedElement;
             ProducedBy = producedBy;
@@ -30,37 +38,37 @@ namespace TMech.Core
             JavaScriptExecutor = (IJavaScriptExecutor)wrappedElement.WrappedDriver;
         }
 
-        public WebElement WrappedElement {get; private set;}
-        public ElementFactory ProducedBy {get;}
-        public By RelatedLocator {get;}
-        public ISearchContext RelatedContext {get;}
-        public uint ActionAttempts {get; private set;} = 10;
+        public WebElement WrappedElement { get; private set; }
+        public ElementFactory ProducedBy { get; }
+        public By RelatedLocator { get; }
+        public ISearchContext RelatedContext { get; }
+        public uint ActionAttempts { get; private set; } = 50;
 
         #region PRIVATE
 
         private bool DoNotReacquireElementOnException;
         private readonly IJavaScriptExecutor JavaScriptExecutor;
         private readonly bool LocatedAsMultiple;
-        private Element() {}
 
-        private TResult RetryActionOnFailureInvoker<TResult>(string errorMessage, Func<TResult> action)
+        private TResult? InternalRetryActionInvoker<TResult>(string errorMessage, Func<TResult> action)
         {
-            Exception? LatestException = null;
+            WebDriverException? LatestException = null;
             uint RemainingAttempts = ActionAttempts;
 
-            while(RemainingAttempts > 0)
+            while (RemainingAttempts > 0)
             {
                 RemainingAttempts--;
 
-                try {
+                try
+                {
                     return action.Invoke();
                 }
-                catch(WebDriverException delegateError)
+                catch (WebDriverException delegateError)
                 {
                     LatestException = delegateError;
                     if (RemainingAttempts == 0) break;
 
-                    System.Threading.Thread.Sleep(500);
+                    System.Threading.Thread.Sleep(100);
                     if (LocatedAsMultiple) continue;
 
                     // If the error is because the element reference is no longer valid then attempt to reacquire
@@ -80,19 +88,19 @@ namespace TMech.Core
                 }
             }
 
-            string FinalErrorMessage = $"{errorMessage}. Element locator: {RelatedLocator.Mechanism} - {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)";
-            
-            if (LatestException is not null)
-                throw new ElementInteractionException(FinalErrorMessage, LatestException);
+            string FinalErrorMessage = $"{errorMessage}. Element locator: {RelatedLocator.Mechanism} | {RelatedLocator.Criteria}. Tried {ActionAttempts} time(s)";
 
-            throw new ElementInteractionException(FinalErrorMessage);
+            if (LatestException is not null)
+                throw new Exceptions.ElementInteractionException(FinalErrorMessage, LatestException);
+
+            throw new Exceptions.ElementInteractionException(FinalErrorMessage);
         }
 
         #endregion
 
         /// <summary>
-        /// Instructs this instance to retry actions - such as clicking and fetching attributes etc - a certain number of times before throwing an exception.<br/>
-        /// There's a 500 ms delay between attempts so if for example you want to wait max 5 seconds before stopping then set this to 10.
+        /// Instructs this instance to retry actions a specific number of times before throwing an exception.<br/>
+        /// There's a 100 ms delay between attempts so you need 10 attempts per 1 second (50 for 5 seconds, 100 for 10 seconds etc).
         /// </summary>
         /// <param name="attempts">The amount of attempts to make. If passed as 0 it will be set to 1.</param>
         public Element TryActionsThisManyTimes(uint attempts)
@@ -117,7 +125,8 @@ namespace TMech.Core
         /// <summary>Attempts to click the element. Will retry on exceptions, equal to the amount defined in <see cref='ActionAttempts'/></summary>
         public void Click()
         {
-            _ = RetryActionOnFailureInvoker<bool>("Unable to click element", ()=> {
+            _ = InternalRetryActionInvoker<bool>("Failed to click element", () =>
+            {
                 WrappedElement.Click();
                 return true;
             });
@@ -125,7 +134,8 @@ namespace TMech.Core
 
         public void ScrollIntoView()
         {
-            _ = RetryActionOnFailureInvoker<bool>("Unable to click element", ()=> {
+            _ = InternalRetryActionInvoker<bool>("Failed scroll element into view", () =>
+            {
                 JavaScriptExecutor.ExecuteScript("arguments[0].scrollIntoView();", new object[] { WrappedElement });
                 return true;
             });
@@ -149,8 +159,8 @@ namespace TMech.Core
         /// <returns>The name of the element if it's a form control element. For input-elements the type-name is returned as well (input:text, input:file etc). Returns empty string otherwise.</returns>
         public string GetFormControlType()
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>(
-                "Unable to retrieve the name of the form control type",
+            string? ReturnData = InternalRetryActionInvoker<string>(
+                "Failed to retrieve the name of the form control type",
                 () =>
                 {
                     string TagName = WrappedElement.TagName;
@@ -178,12 +188,15 @@ namespace TMech.Core
         /// </summary>
         public ImmutableList<string> GetAttributeNames()
         {
-            var ReturnData =  RetryActionOnFailureInvoker<ReadOnlyCollection<object>>("Unable to retrieve attribute names", ()=> {
+            ReadOnlyCollection<object>? ReturnData = InternalRetryActionInvoker("Failed to retrieve attribute names", () =>
+            {
                 ReadOnlyCollection<object>? AttributeArray = JavaScriptExecutor.ExecuteScript("return arguments[0].getAttributeNames();", new object[] { WrappedElement }) as ReadOnlyCollection<object>;
                 return AttributeArray ?? new ReadOnlyCollection<object>(Array.Empty<string>());
             });
 
-            return ReturnData.Select(attributeName=> (string)attributeName).ToImmutableList();
+#pragma warning disable CS8604 // InternalRetryActionInvoker may return null but the delegate we pass ensure we never get null values so ignore warning
+            return ReturnData.Select(attributeName => (string)attributeName).ToImmutableList();
+#pragma warning restore CS8604 // Possible null reference argument.
         }
 
         /// <summary>
@@ -191,23 +204,24 @@ namespace TMech.Core
         /// </summary>
         public ImmutableDictionary<string, string> GetAttributes()
         {
-            Dictionary<string,object>? ScriptReturnData = RetryActionOnFailureInvoker<Dictionary<string,object>>(
-                "Unable to retrieve attributes and their values",
-                ()=> {
+            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker<Dictionary<string, object>>(
+                "Failed to retrieve attributes and their values",
+                () =>
+                {
                     string Script = @"
                         let ReturnData = {};
                         const AttributeNames = arguments[0].getAttributeNames();
                         AttributeNames.forEach(name=> ReturnData[name] = arguments[0].getAttribute(name));
                         return ReturnData;
                     ";
-                    return JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement }) as Dictionary<string,object>;
+                    return (Dictionary<string, object>)JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement });
                 }
             );
 
             if (ScriptReturnData is null) return ImmutableDictionary.Create<string, string>();
 
             var ReturnData = ImmutableDictionary.CreateBuilder<string, string>();
-            foreach(KeyValuePair<string,object> Current in ScriptReturnData)
+            foreach (KeyValuePair<string, object> Current in ScriptReturnData)
             {
                 ReturnData.Add(Current.Key, (string)Current.Value);
             }
@@ -220,23 +234,24 @@ namespace TMech.Core
         /// </summary>
         public ImmutableDictionary<string, string> GetDataSet()
         {
-            Dictionary<string,object>? ScriptReturnData = RetryActionOnFailureInvoker<Dictionary<string,object>?>(
-                "Unable to retrieve dataset-attrbute values",
-                ()=> {
+            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker<Dictionary<string, object>?>(
+                "Failed to retrieve dataset-attrbute values",
+                () =>
+                {
                     string Script = @"
                         let ReturnData = {};
                         for(let Key in arguments[0].dataset)
                             ReturnData[Key] = arguments[0].dataset[Key];
                         return ReturnData;
                     ";
-                    return JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement }) as Dictionary<string,object>;
+                    return JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement }) as Dictionary<string, object>;
                 }
             );
 
             if (ScriptReturnData is null) return ImmutableDictionary.Create<string, string>();
 
             var ReturnData = ImmutableDictionary.CreateBuilder<string, string>();
-            foreach(KeyValuePair<string,object> Current in ScriptReturnData)
+            foreach (KeyValuePair<string, object> Current in ScriptReturnData)
             {
                 ReturnData.Add(Current.Key, (string)Current.Value);
             }
@@ -249,12 +264,12 @@ namespace TMech.Core
         /// </summary>
         public string GetHTML()
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the inner, nested HTML", ()=> {
-                string? HTML = JavaScriptExecutor.ExecuteScript("return arguments[0].innerHTML;", new object[] { WrappedElement }) as string;
-                return HTML?.Trim() ?? string.Empty;
+            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the inner, nested HTML", () =>
+            {
+                return (string)JavaScriptExecutor.ExecuteScript("return arguments[0].innerHTML;", new object[] { WrappedElement });
             });
 
-            return ReturnData;
+            return ReturnData?.Trim() ?? string.Empty;
         }
 
         /// <summary>
@@ -262,11 +277,12 @@ namespace TMech.Core
         /// </summary>
         public string GetId()
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the id", ()=> {
+            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the id", () =>
+            {
                 return WrappedElement.GetAttribute("id");
             });
 
-            return ReturnData;
+            return ReturnData ?? string.Empty;
         }
 
         /// <summary>
@@ -274,11 +290,12 @@ namespace TMech.Core
         /// </summary>
         public string GetTagName()
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the HTML-tag name", ()=> {
+            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the HTML-tag name", () =>
+            {
                 return WrappedElement.TagName;
             });
 
-            return ReturnData;
+            return ReturnData ?? string.Empty;
         }
 
         /// <summary>
@@ -287,13 +304,14 @@ namespace TMech.Core
         /// <param name="removeAdditionalWhitespace">Whether to remove additional whitespace aside from leading and trailing, such as newlines, tabs, linefeeds etc. Optional, defaults to true.</param>
         public string GetText(bool removeAdditionalWhitespace = true)
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the inner text value", ()=> {
+            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the inner text value", () =>
+            {
                 string ElementText = WrappedElement.Text;
                 if (!removeAdditionalWhitespace) return ElementText;
                 return new Regex("[\t\n\v\f\r]").Replace(ElementText, "").Trim();
             });
 
-            return ReturnData;
+            return ReturnData ?? string.Empty;
         }
 
         /// <summary>
@@ -301,11 +319,12 @@ namespace TMech.Core
         /// </summary>
         public string GetValue()
         {
-            string ReturnData =  RetryActionOnFailureInvoker<string>("Unable to retrieve the value", ()=> {
+            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the value", () =>
+            {
                 return WrappedElement.GetAttribute("value");
             });
 
-            return ReturnData.Trim();
+            return ReturnData ?? string.Empty;
         }
 
         #endregion
@@ -318,7 +337,8 @@ namespace TMech.Core
         /// <returns>True if the element is enabled or if the element does not support the disabled-attribute, false otherwise.</returns>
         public bool IsEnabled()
         {
-            bool ReturnData =  RetryActionOnFailureInvoker<bool>("Unable to determine if element is enabled", ()=> {
+            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is enabled", () =>
+            {
                 return WrappedElement.Enabled;
             });
 
@@ -335,7 +355,8 @@ namespace TMech.Core
         /// </summary>
         public bool IsDisplayed()
         {
-            bool ReturnData =  RetryActionOnFailureInvoker<bool>("Unable to determine if element is displayed", ()=> {
+            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is displayed", () =>
+            {
                 return WrappedElement.Displayed;
             });
 
@@ -348,7 +369,8 @@ namespace TMech.Core
         /// <returns>True if the element is an input checkbox and is selected, false otherwise or if the element does not support the checked-attribute.</returns>
         public bool IsSelected()
         {
-            bool ReturnData =  RetryActionOnFailureInvoker<bool>("Unable to determine if element is selected", ()=> {
+            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is selected", () =>
+            {
                 return WrappedElement.Selected;
             });
 
@@ -359,24 +381,47 @@ namespace TMech.Core
 
         #region FETCH RELATED ELEMENTS
 
-        public Element? GetNextSibling()
+        public Element? FetchNextSibling(string tagName = "*")
         {
-            throw new NotImplementedException();
+            var Locator = By.XPath($"./following-sibling::{tagName}[1]");
+            return ProducedBy.Fetch(Locator);
         }
 
-        public Element? GetParent()
+        public Element? FetchParent()
         {
-            throw new NotImplementedException();
+            var Locator = By.XPath("./parent::*[1]");
+            return ProducedBy.Fetch(Locator);
         }
 
-        public Element? GetPreviousSibling()
+        public Element? FetchPreviousSibling(string tagName = "*")
         {
-            throw new NotImplementedException();
+            var Locator = By.XPath($"./preceding-sibling::{tagName}[1]");
+            return ProducedBy.Fetch(Locator);
         }
 
-        public Element[] GetChildren()
+        public Element? FetchAncestor(string tagName = "*")
         {
-            throw new NotImplementedException();
+            var Locator = By.XPath($"./ancestor::{tagName}[1]");
+            return ProducedBy.Fetch(Locator);
+        }
+
+        public Element[] FetchDescendants(string tagName = "*", uint threshold = 1)
+        {
+            return InternalGetChildrenOrDescendants(tagName, false, threshold);
+        }
+
+        public Element[] FetchChildren(string tagName = "*", uint threshold = 1)
+        {
+            return InternalGetChildrenOrDescendants(tagName, true, threshold);
+        }
+
+        private Element[] InternalGetChildrenOrDescendants(string tagName, bool children, uint threshold)
+        {
+            string Axis = children ? "child" : "descendant";
+            var Locator = By.XPath($"./{Axis}::{tagName}");
+
+            Element[] ReturnData = ProducedBy.FetchAll(Locator, threshold);
+            return ReturnData;
         }
 
         #endregion

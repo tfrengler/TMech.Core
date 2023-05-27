@@ -1,18 +1,15 @@
 using System;
 
-public class ElementInteractionException : TMechException
+namespace TMech.Core.Exceptions
 {
-    public ElementInteractionException()
+    [Serializable]
+    public class ElementInteractionException : TMechException
     {
+        public ElementInteractionException() { }
+
+        public ElementInteractionException(string message) : base(message) { }
+
+        public ElementInteractionException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public ElementInteractionException(string message)
-        : base(message)
-    {
-    }
-
-    public ElementInteractionException(string message, Exception inner)
-        : base(message, inner)
-    {
-    }
 }

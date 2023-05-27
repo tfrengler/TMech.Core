@@ -1,11 +1,10 @@
 using NUnit.Framework;
-using System;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using TMech.Core;
-using System.Diagnostics;
+using System;
 using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
+using System.Diagnostics;
+using TMech.Core;
 
 namespace Tests
 {
@@ -39,7 +38,7 @@ namespace Tests
 
             Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Button-Id"));
             Assert.NotNull(TestElement);
-            TestElement.TryActionsThisManyTimes(10);
+            TestElement.TryActionsThisManyTimes(50);
 
             Webdriver.ExecuteAsyncScript(@"
                 HideElement(Elements.Context2Button());
@@ -369,7 +368,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out ExceptionDispatchInfo? Error);
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out WebDriverException? Error);
             Assert.True(Success);
             Assert.NotNull(TestElement);
             Assert.Null(Error);
@@ -398,7 +397,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out ExceptionDispatchInfo? Error);
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out WebDriverException? Error);
             Assert.True(Success);
             Assert.NotNull(TestElement);
             Assert.Null(Error);
@@ -408,14 +407,12 @@ namespace Tests
             Webdriver.ExecuteAsyncScript($@"
                 RemoveLastChildOfParent(Elements.Context1());
                 arguments[arguments.length - 1]();
-                await Wait(3000);
-                let NewElement = document.createElement('div');
-                NewElement.id = '{JSElements.Context1Div3}';
-                Elements.Context1().appendChild(NewElement);
             ");
 
             var Timer = Stopwatch.StartNew();
-            Assert.Throws<ElementInteractionException>(() => TestElement.GetId());
+            var Exception = Assert.Throws<TMech.Core.Exceptions.ElementInteractionException>(() => TestElement.GetId());
+            Assert.That(Exception.InnerException, Is.TypeOf<StaleElementReferenceException>());
+            
             Timer.Stop();
 
             Webdriver.Quit();

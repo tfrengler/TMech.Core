@@ -1,18 +1,15 @@
 using System;
 
-public class TMechException : Exception
+namespace TMech.Core.Exceptions
 {
-    public TMechException()
+    [Serializable]
+    public class TMechException : Exception
     {
+        public TMechException() { }
+
+        public TMechException(string message) : base(message) { }
+
+        public TMechException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public TMechException(string message)
-        : base(message)
-    {
-    }
-
-    public TMechException(string message, Exception inner)
-        : base(message, inner)
-    {
-    }
 }

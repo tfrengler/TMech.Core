@@ -3,17 +3,17 @@ using OpenQA.Selenium;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using TMech.Core.Exceptions;
 
 namespace TMech.Core
 {
 
     /// <summary>
     /// <para>A class for fetching HTML-elements - in the form of Element-instances - that may be sensitive to errors due to for example dynamic loading/background updates etc.<br/>
-    /// Also provides conditional locating strategies (see TryFetchWhen) for fetching elements once they fullfill certain criteria.</para>
+    /// Also provides conditional locating strategies (see <see cref="TryFetchWhen"/>) for fetching elements once they fullfill certain criteria.</para>
     /// <para>Built around the central premise that elements may not always be available the moment you search for them, and that not finding them does not by default constitute an exception.<br/>
-    /// This puts the responsibility of handling not finding an element - and any eventual exceptions - in your hands.</para>
     /// </summary>
     public sealed class ElementFactory
     {
@@ -35,19 +35,23 @@ namespace TMech.Core
             Timeout = timeout;
         }
 
-        private ElementFactory() {}
         private readonly ISearchContext SearchContext;
 
-        #region GET
+        #region FETCH
 
         /// <summary>
         /// Attempts to fetch an element that matches the passed locator and throws an exception if it cannot be found within the timeout this instance of <see cref='ElementFactory'/> is configured with.
         /// </summary>
         /// <returns>The element matching <paramref name='locator'/>. If an exception is thrown, then it will be null.</returns>
+        /// <exception cref="FetchElementException"></exception>
         public Element? Fetch(By locator)
         {
-            (bool Success, Element? Element, ExceptionDispatchInfo? Error) = InternalTryFetch(locator, Timeout);
-            if (!Success) Error.Throw(); // Should be guaranteed NOT to be null if Success is false
+            (bool Success, Element? Element, WebDriverException? Error) = InternalTryFetch(locator, Timeout);
+            if (!Success)
+            {
+                Debug.Assert(Error is not null);
+                throw new FetchElementException(locator, Timeout, Error);
+            }
             return Element;
         }
 
@@ -55,11 +59,47 @@ namespace TMech.Core
         /// Attempts to fetch an element that matches the passed locator and throws an exception if it cannot be found within the timeout you pass.
         /// </summary>
         /// <returns>The element matching <paramref name='locator'/>. If an exception is thrown, then it will be null.</returns>
+        /// <exception cref="FetchElementException"></exception>
         public Element? Fetch(By locator, TimeSpan timeout)
         {
-            (bool Success, Element? Element, ExceptionDispatchInfo? Error) = InternalTryFetch(locator, timeout);
-            if (!Success) Error.Throw();
+            (bool Success, Element? Element, WebDriverException? Error) = InternalTryFetch(locator, timeout);
+            if (!Success)
+            {
+                Debug.Assert(Error is not null);
+                throw new FetchElementException(locator, timeout, Error);
+            }
+
             return Element;
+        }
+
+        /// <summary>
+        /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
+        /// Will throw an exception if fewer elements than passed in <paramref name="threshold"/> have been found before the timeout.
+        /// </summary>
+        /// <param name="threshold">The amount of elements that must match the locator before returning.</param>
+        /// <returns>A collection of elements matching the locator at or above the <paramref name="threshold"/>.</returns>
+        /// <exception cref="FetchElementException"></exception>
+        public Element[] FetchAll(By locator, uint threshold = 1)
+        {
+            (bool Success, Element[] elements) = InternalTryFetchAll(locator, Timeout, threshold);
+            if (!Success) throw new FetchElementException(locator, Timeout);
+
+            return elements;
+        }
+
+        /// <summary>
+        /// Attempts to fetch all elements that match the passed locator within the timeout specified.<br/>
+        /// Will throw an exception if fewer elements than passed in <paramref name="threshold"/> have been found before the timeout.
+        /// </summary>
+        /// <param name="threshold">The amount of elements that must match the locator before returning.</param>
+        /// <returns>A collection of elements matching the locator at or above the <paramref name="threshold"/>.</returns>
+        /// <exception cref="FetchElementException"></exception>
+        public Element[] FetchAll(By locator, TimeSpan timeout, uint threshold = 1)
+        {
+            (bool Success, Element[] elements) = InternalTryFetchAll(locator, timeout, threshold);
+            if (!Success) throw new FetchElementException(locator, timeout);
+
+            return elements;
         }
 
         #endregion
@@ -67,24 +107,26 @@ namespace TMech.Core
         #region TRY FETCH
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.
+        /// Attempts to fetch an element that matches the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
+        /// Great for fine grained control (or during development) where you can precisely trial element lookups and inspect/handle WebDriverExceptions.
         /// </summary>
         /// <param name="element">A reference to the element that was found, or null if the timeout was reached.</param>
-        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered.</param>
+        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered. Never null if return value is <see langword="false"/>.</param>
         /// <returns>True if the element was found within the timeout, false otherwise.</returns>
-        public bool TryFetch(By locator, out Element? element, out ExceptionDispatchInfo? error)
+        public bool TryFetch(By locator, [NotNullWhen(true)] out Element? element, [NotNullWhen(false)] out WebDriverException? error)
         {
             (bool Success, element, error) = InternalTryFetch(locator, Timeout);
             return Success;
         }
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator within the timeout you pass.
+        /// Attempts to fetch an element that matches the passed locator within the timeout you pass.<br/>
+        /// Great for fine grained control (or during development) where you can precisely trial element lookups and inspect/handle WebDriverExceptions.
         /// </summary>
         /// <param name="element">A reference to the element that was found, or null if the timeout was reached.</param>
-        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered.</param>
+        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered. Never null if return value is <see langword="false"/>.</param>
         /// <returns>True if the element was found within the timeout, false otherwise.</returns>
-        public bool TryFetch(By locator, TimeSpan timeout, out Element? element, out ExceptionDispatchInfo? error)
+        public bool TryFetch(By locator, TimeSpan timeout, [NotNullWhen(true)] out Element? element, [NotNullWhen(false)] out WebDriverException? error)
         {
             (bool Success, element, error) = InternalTryFetch(locator, timeout);
             return Success;
@@ -95,11 +137,12 @@ namespace TMech.Core
         #region TRY FETCH ALL
 
         /// <summary>
-        /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.
+        /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
+        /// NOTE: If you set <paramref name="threshold"/> to 0 then it effectively becomes a normal "find elements"-call, since it bypasses the retry mechanism, and whatever elements are located (or not) will be returned immediately.
         /// </summary>
-        /// <param name="elements">A reference to the collection of elements that were found. The collection is empty if the amount of elements that were found were below <paramref name='threshold'/> or if the timeout was reached.</param>
+        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null and contains whatever elements were found after <paramref name="threshold"/> was reached or after <see cref="Timeout"/> was reached.</param>
         /// <param name="threshold">The amount of elements that must match the locator.</param>
-        /// <returns>True if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, false otherwise.</returns>
+        /// <returns><see langword="true"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="false"/> otherwise.</returns>
         public bool TryFetchAll(By locator, out Element[] elements, uint threshold = 1)
         {
             (bool Success, elements) = InternalTryFetchAll(locator, Timeout, threshold);
@@ -107,11 +150,12 @@ namespace TMech.Core
         }
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator within the timeout you pass.
+        /// Attempts to fetch all elements that match the passed locator within the timeout you pass.<br/>
+        /// NOTE: If you set <paramref name="threshold"/> to 0 then it effectively becomes a normal "find elements"-call, since it bypasses the retry mechanism, and whatever elements are located (or not) will be returned immediately.
         /// </summary>
-        /// <param name="elements">A reference to the collection of elements that were found. The collection is empty if the amount of elements that were found were below <paramref name='threshold'/> or if the timeout was reached.</param>
+        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null and contains whatever elements were found after <paramref name="threshold"/> was reached or after <paramref name="timeout"/> was reached.</param>
         /// <param name="threshold">The amount of elements that must match the locator.</param>
-        /// <returns>True if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, false otherwise.</returns>
+        /// <returns><see langword="true"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="false"/> otherwise.</returns>
         public bool TryFetchAll(By locator, TimeSpan timeout, out Element[] elements, uint threshold = 1)
         {
             (bool Success, elements) = InternalTryFetchAll(locator, timeout, threshold);
@@ -146,6 +190,12 @@ namespace TMech.Core
             return SearchContext.FindElements(locator).Count > 0;
         }
 
+        /// <summary>Returns the amount of elements that match the passed locator.</summary>
+        public int Count(By locator)
+        {
+            return SearchContext.FindElements(locator).Count;
+        }
+
         #region PRIVATE
 
         private Tuple<bool, Element[]> InternalTryFetchAll(By locator, TimeSpan timeout, uint threshold)
@@ -156,7 +206,7 @@ namespace TMech.Core
             {
                 ReadOnlyCollection<IWebElement> Elements = SearchContext.FindElements(locator);
 
-                if (Elements.Count < threshold)
+                if (threshold > 0 && Elements.Count < threshold)
                 {
                     Thread.Sleep((int)PollingInterval);
                     continue;
@@ -174,10 +224,10 @@ namespace TMech.Core
 
         // If return.item1 is false then return.item2 is null and return.item3 is not.
         // If return.item1 is true then return.item2 is not null and return.item3 is null.
-        private Tuple<bool, Element?, ExceptionDispatchInfo?> InternalTryFetch(By locator, TimeSpan timeout)
+        private Tuple<bool, Element?, WebDriverException?> InternalTryFetch(By locator, TimeSpan timeout)
         {
             var Timer = Stopwatch.StartNew();
-            ExceptionDispatchInfo? LatestException = null;
+            WebDriverException? LatestException = null;
 
             while (Timer.Elapsed <= timeout)
             {
@@ -186,9 +236,9 @@ namespace TMech.Core
                     IWebElement Element = SearchContext.FindElement(locator);
                     return new(true, new Element((WebElement)Element, this, locator, SearchContext, false), null);
                 }
-                catch (Exception error) when (error is WebDriverException)
+                catch (WebDriverException error)
                 {
-                    LatestException = ExceptionDispatchInfo.Capture(error);
+                    LatestException = error;
                     Thread.Sleep((int)PollingInterval);
                 }
             }

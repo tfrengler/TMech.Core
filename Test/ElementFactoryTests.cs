@@ -1,10 +1,9 @@
 using NUnit.Framework;
-using System;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using TMech.Core;
+using System;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
+using TMech.Core;
 
 namespace Tests
 {
@@ -95,11 +94,61 @@ namespace Tests
             var ElementFactory = new ElementFactory(Webdriver);
             Element? TestElement = null;
 
-            Assert.Throws(typeof(NoSuchElementException), ()=> {
+            Assert.Throws(typeof(TMech.Core.Exceptions.FetchElementException), ()=> {
                 TestElement = ElementFactory.Fetch(By.Id("DoesNotExist"));
             });
             Webdriver.Quit();
             Assert.IsNull(TestElement);
+        }
+
+        private const string Category_FetchAll = "ElementFactory FetchAll";
+        [TestCase(Category = Category_FetchAll)]
+        public void FetchAll_WebdriverContext_ImmediatelyAvailable()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+            Element[] TestElements = null;
+            Stopwatch Timer = Stopwatch.StartNew();
+
+            Assert.DoesNotThrow(() =>
+            {
+                TestElements = ElementFactory.FetchAll(By.CssSelector("[id^='Context1-Div']"));
+            });
+
+            Timer.Stop();
+            Webdriver.Quit();
+            Assert.NotNull(TestElements);
+            Assert.Less(Timer.ElapsedMilliseconds, 300, "Expected it to be more or less instant to fetch the elements!");
+            Assert.AreEqual(3, TestElements.Length);
+        }
+
+        [TestCase(Category = Category_FetchAll)]
+        public void FetchAll_WebdriverContext_DelayedAvailability()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Webdriver.ExecuteAsyncScript(@"
+                arguments[arguments.length - 1]();
+                await Wait(2000);
+                CopyLastChildOfParentAndAppend(Elements.Context1());
+            ");
+
+            var Timer = Stopwatch.StartNew();
+            Element[] TestElements = null;
+
+            Assert.DoesNotThrow(() =>
+            {
+                TestElements = ElementFactory.FetchAll(By.CssSelector("[id^='Context1-Div']"), 4);
+            });
+
+            Timer.Stop();
+
+            Webdriver.Quit();
+
+            Assert.True(TestElements is not null);
+            Assert.AreEqual(TestElements.Length, 4, "Expected 4 elements because we added an extra element to the DOM!");
+            Assert.Greater(Timer.ElapsedMilliseconds, 1800, "Expected it to take around 2 seconds to fetch the elements!");
         }
 
         private const string Category_TryFetch_WebdriverContext = "ElementFactory TryFetch WebdriverContext";
@@ -173,7 +222,7 @@ namespace Tests
             Assert.False(Success);
             Assert.Null(TestElement);
             Assert.NotNull(Error);
-            Assert.AreEqual(typeof(NoSuchElementException), Error.SourceException.GetType());
+            Assert.AreEqual(typeof(NoSuchElementException), Error.GetType());
             Assert.Greater(Timer.ElapsedMilliseconds, 4800, "Expected it to take at least 5 seconds before the fetch failed, since that is the default");
         }
 
@@ -189,7 +238,7 @@ namespace Tests
             Assert.NotNull(ParentElement);
 
             var Timer = Stopwatch.StartNew();
-            bool ChildSuccess = ParentElement.Elements().TryFetch(By.Id("Context1-Div3-Id"), out Element? ChildElement, out var ChildError);
+            bool ChildSuccess = ParentElement.Elements().TryFetch(By.Id(JSElements.Context1Div3), out Element? ChildElement, out var ChildError);
             Timer.Stop();
 
             Webdriver.Quit();
@@ -218,7 +267,7 @@ namespace Tests
             Assert.False(ChildSuccess);
             Assert.Null(ChildElement);
             Assert.NotNull(ChildError);
-            Assert.AreEqual(typeof(NoSuchElementException), ChildError.SourceException.GetType());
+            Assert.AreEqual(typeof(NoSuchElementException), ChildError.GetType());
             Assert.Greater(Timer.ElapsedMilliseconds, 4800, "Expected it to take at least 5 seconds before the fetch failed, since that is the default");
         }
 

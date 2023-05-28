@@ -384,25 +384,25 @@ namespace TMech.Core
         public Element? FetchNextSibling(string tagName = "*")
         {
             var Locator = By.XPath($"./following-sibling::{tagName}[1]");
-            return ProducedBy.Fetch(Locator);
+            return Elements(ProducedBy.Timeout).Fetch(Locator);
         }
 
         public Element? FetchParent()
         {
             var Locator = By.XPath("./parent::*[1]");
-            return ProducedBy.Fetch(Locator);
+            return Elements(ProducedBy.Timeout).Fetch(Locator);
         }
 
         public Element? FetchPreviousSibling(string tagName = "*")
         {
             var Locator = By.XPath($"./preceding-sibling::{tagName}[1]");
-            return ProducedBy.Fetch(Locator);
+            return Elements(ProducedBy.Timeout).Fetch(Locator);
         }
 
         public Element? FetchAncestor(string tagName = "*")
         {
             var Locator = By.XPath($"./ancestor::{tagName}[1]");
-            return ProducedBy.Fetch(Locator);
+            return Elements(ProducedBy.Timeout).Fetch(Locator);
         }
 
         public Element[] FetchDescendants(string tagName = "*", uint threshold = 1)
@@ -420,7 +420,7 @@ namespace TMech.Core
             string Axis = children ? "child" : "descendant";
             var Locator = By.XPath($"./{Axis}::{tagName}");
 
-            Element[] ReturnData = ProducedBy.FetchAll(Locator, threshold);
+            Element[] ReturnData = Elements(ProducedBy.Timeout).FetchAll(Locator, threshold);
             return ReturnData;
         }
 

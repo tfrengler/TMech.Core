@@ -1,10 +1,10 @@
 using NUnit.Framework;
-using System;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using TMech.Core;
+using System;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
+using TMech.Core;
+using TMech.Core.Exceptions;
 
 namespace Tests
 {
@@ -16,7 +16,7 @@ namespace Tests
 
         private const string Category_State = "Waiter State";
         [TestCase(Category=Category_State)]
-        public void Element_State_NOK_Timeout_NoThrow()
+        public void Element_State_NOK_Timeout()
         {
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver, TimeSpan.FromSeconds(3));
@@ -27,34 +27,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            ElementWaitException Exception = Assert.Throws<ElementWaitException>(() => ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.False(Success);
-            Assert.Null(TestElement);
-            Assert.Null(Error);
-            Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the timeout to be reached");
-        }
-
-        [TestCase(Category=Category_State)]
-        public void Element_State_NOK_Timeout_DoThrow()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver, TimeSpan.FromSeconds(3));
-
-            Webdriver.ExecuteAsyncScript(@"
-                HideElement(Elements.Context1Div1());
-                arguments[arguments.length - 1]();
-            ");
-
-            var Timer = Stopwatch.StartNew();
-            Assert.Throws<TimeoutException>(() => ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).ThrowOnTimeout().IsDisplayed(out _, out _));
-            Timer.Stop();
-
-            Webdriver.Quit();
-
+            Assert.NotNull(Exception);
+            Assert.IsNull(Exception.InnerException);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the timeout to be reached");
         }
 
@@ -72,14 +51,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to be displayed");
         }
 
@@ -96,14 +74,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsNotDisplayed(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsNotDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to become invisible");
         }
 
@@ -121,14 +98,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsEnabled(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsEnabled());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to be enabled");
         }
 
@@ -145,14 +121,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsNotEnabled(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsNotEnabled());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to be disabled");
         }
 
@@ -170,14 +145,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsSelected(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsSelected());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to be selected");
         }
 
@@ -195,14 +169,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsNotSelected(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsNotSelected());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element to be deselected");
         }
         #endregion
@@ -223,14 +196,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeIsEqualTo(out ExceptionDispatchInfo? Error, out Element? TestElement, "value", "Attributes_IsEqual");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeIsEqualTo("value", "Attributes_IsEqual"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element attribute to be equal to value");
         }
 
@@ -247,14 +219,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeContains(out ExceptionDispatchInfo? Error, out Element? TestElement, "value", "es_Con");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeContains("value", "es_Con"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element attribute to contain value");
         }
 
@@ -271,14 +242,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeEndsWith(out ExceptionDispatchInfo? Error, out Element? TestElement, "value", "_This_Value");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeEndsWith("value", "_This_Value"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element attribute to end with value");
         }
 
@@ -295,14 +265,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeStartsWith(out ExceptionDispatchInfo? Error, out Element? TestElement, "value", "Attributes_StartWith");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeStartsWith("value", "Attributes_StartWith"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element attribute to start with value");
         }
 
@@ -324,14 +293,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsEqualTo(out ExceptionDispatchInfo? Error, out Element? TestElement, "Content_IsEqual");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsEqualTo("Content_IsEqual"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content to be equal to");
         }
 
@@ -348,14 +316,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentContains(out ExceptionDispatchInfo? Error, out Element? TestElement, "nt_Co");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentContains("nt_Co"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content to contain");
         }
 
@@ -372,14 +339,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentEndsWith(out ExceptionDispatchInfo? Error, out Element? TestElement, "_This_Value");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentEndsWith("_This_Value"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content to end with");
         }
 
@@ -396,14 +362,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentStartsWith(out ExceptionDispatchInfo? Error, out Element? TestElement, "Content_StartsWith");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentStartsWith("Content_StartsWith"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content to start with");
         }
 
@@ -421,14 +386,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsNotEqualTo(out ExceptionDispatchInfo? Error, out Element? TestElement, "Content_NotEqualTo");
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsNotEqualTo("Content_NotEqualTo"));
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content not to be equal to");
         }
 
@@ -446,14 +410,13 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            bool Success = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).HasContent(out ExceptionDispatchInfo? Error, out Element? TestElement);
+            Element? TestElement = null;
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).HasContent());
             Timer.Stop();
 
             Webdriver.Quit();
 
-            Assert.True(Success);
             Assert.NotNull(TestElement);
-            Assert.Null(Error);
             Assert.Greater(Timer.ElapsedMilliseconds, 2800, "Expected it to take around 3 seconds for the element content to exist");
         }
 

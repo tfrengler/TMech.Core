@@ -422,5 +422,150 @@ namespace Tests
         #endregion
 
         #endregion
+
+        #region RELATIONAL ELEMENTS
+
+        private const string Category_RelationalElements = "Category_RelationalElements";
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_NextSibling()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Sibling1 = TestElement.FetchNextSibling();
+            var Sibling2 = TestElement.FetchNextSibling("div");
+
+            Assert.NotNull(Sibling1);
+            Assert.NotNull(Sibling2);
+
+            Assert.AreEqual("Context2-Checkbox-Wrapper", Sibling1.GetId());
+            Assert.AreEqual("Context2-Checkbox-Wrapper", Sibling2.GetId());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_PreviousSibling()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Sibling1 = TestElement.FetchPreviousSibling();
+            var Sibling2 = TestElement.FetchPreviousSibling("div");
+
+            Assert.NotNull(Sibling1);
+            Assert.NotNull(Sibling2);
+
+            Assert.AreEqual("Context2-Button-Wrapper", Sibling1.GetId());
+            Assert.AreEqual("Context2-Button-Wrapper", Sibling2.GetId());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_Parent()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Parent = TestElement.FetchParent();
+
+            Assert.NotNull(Parent);
+            Assert.AreEqual("Context2-Inputs", Parent.GetId());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_Ancestors()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Ancestor1 = TestElement.FetchAncestor("fieldset");
+            var Ancestor2 = TestElement.FetchAncestor("section");
+
+            Assert.NotNull(Ancestor1);
+            Assert.NotNull(Ancestor2);
+
+            Assert.AreEqual("Context2-Inputs", Ancestor1.GetId());
+            Assert.AreEqual("Context2", Ancestor2.GetId());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_Children()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Children = TestElement.FetchChildren();
+
+            Assert.NotNull(Children);
+
+            Assert.AreEqual(Children.Length, 2);
+            Assert.AreEqual(Children[0].GetTagName(), "label");
+            Assert.AreEqual(Children[1].GetTagName(), "input");
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_Specific_Children()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Assert.NotNull(TestElement);
+
+            var Children = TestElement.FetchChildren("input");
+
+            Assert.NotNull(Children);
+
+            Assert.AreEqual(Children.Length, 1);
+            Assert.AreEqual(Children[0].GetTagName(), "input");
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_RelationalElements)]
+        public void RelationalElements_Descendants()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Inputs"));
+            Assert.NotNull(TestElement);
+
+            var Descendants1 = TestElement.FetchDescendants();
+            var Descendants2 = TestElement.FetchDescendants("input");
+
+            Assert.NotNull(Descendants1);
+            Assert.NotNull(Descendants2);
+
+            Assert.AreEqual(Descendants1.Length, 19);
+            Assert.AreEqual(Descendants2.Length, 6);
+
+            Webdriver.Quit();
+        }
+
+        #endregion
     }
 }

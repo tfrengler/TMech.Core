@@ -175,5 +175,3 @@ IHasChildren
 <ul>/<ol>                       = List             : Element, IHasChildren, IHasMultiData<string>
     - List[] GetNestedLists()
 
-Interaction exceptions:
-

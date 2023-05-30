@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using TMech.Core.Exceptions;
 
-namespace TMech.Core
+namespace TMech.Core.Elements
 {
 
     /// <summary>
@@ -17,7 +17,7 @@ namespace TMech.Core
     /// </summary>
     public sealed class ElementFactory
     {
-        public TimeSpan DefaultTimeout {get;} = TimeSpan.FromSeconds(5.0d);
+        public TimeSpan DefaultTimeout { get; } = TimeSpan.FromSeconds(5.0d);
         public uint PollingInterval { get; set; } = 100;
         public TimeSpan Timeout { get; }
 
@@ -213,10 +213,10 @@ namespace TMech.Core
                 }
 
                 var ReturnData = new Element[Elements.Count];
-                for(int Index = 0; Index < Elements.Count; Index++)
+                for (int Index = 0; Index < Elements.Count; Index++)
                     ReturnData[Index] = new Element((WebElement)Elements[Index], this, locator, SearchContext, true);
 
-                return new (true, ReturnData);
+                return new(true, ReturnData);
             }
 
             return new(false, Array.Empty<Element>());

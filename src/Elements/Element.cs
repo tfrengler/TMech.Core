@@ -1,15 +1,13 @@
+using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
-using OpenQA.Selenium;
-using OpenQA.Selenium.DevTools.V106.Debugger;
 
-namespace TMech.Core
+namespace TMech.Core.Elements
 {
     /// <summary><para>
     /// Represents an HTML-element, acting as a wrapper for an IWebElement-instance. Designed for ease of use and stability, with built-in retry mechanisms for all (inter)actions.<br/>
@@ -42,15 +40,15 @@ namespace TMech.Core
         public ElementFactory ProducedBy { get; }
         public By RelatedLocator { get; }
         public ISearchContext RelatedContext { get; }
+        public bool LocatedAsMultiple { get; }
         public uint ActionAttempts { get; private set; } = 50;
 
         #region PRIVATE
 
         private bool DoNotReacquireElementOnException;
-        private readonly IJavaScriptExecutor JavaScriptExecutor;
-        private readonly bool LocatedAsMultiple;
+        protected readonly IJavaScriptExecutor JavaScriptExecutor;
 
-        private TResult? InternalRetryActionInvoker<TResult>(string errorMessage, Func<TResult> action)
+        protected TResult? InternalRetryActionInvoker<TResult>(string errorMessage, Func<TResult> action)
         {
             WebDriverException? LatestException = null;
             uint RemainingAttempts = ActionAttempts;
@@ -122,10 +120,10 @@ namespace TMech.Core
 
         #region ACTIONS/INTERACTIONS
 
-        /// <summary>Attempts to click the element. Will retry on exceptions, equal to the amount defined in <see cref='ActionAttempts'/></summary>
+        /// <summary>Attempts to click the element.</summary>
         public void Click()
         {
-            _ = InternalRetryActionInvoker<bool>("Failed to click element", () =>
+            _ = InternalRetryActionInvoker("Failed to click element", () =>
             {
                 WrappedElement.Click();
                 return true;
@@ -134,9 +132,23 @@ namespace TMech.Core
 
         public void ScrollIntoView()
         {
-            _ = InternalRetryActionInvoker<bool>("Failed scroll element into view", () =>
+            _ = InternalRetryActionInvoker("Failed scroll element into view", () =>
             {
                 JavaScriptExecutor.ExecuteScript("arguments[0].scrollIntoView();", new object[] { WrappedElement });
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Attempts to send input to the element. This will fail if the element is not a type that accepts input (textarea, input etc).
+        /// </summary>
+        /// <param name="clear">Whether to clear the value in the element first. If <see langword="false"/> then the <paramref name="input"/> is appended instead.</param>
+        public void SendKeys(string input, bool clear = true)
+        {
+            _ = InternalRetryActionInvoker("Failed to send keys to element", () =>
+            {
+                if (clear) WrappedElement.Clear();
+                WrappedElement.SendKeys(input);
                 return true;
             });
         }
@@ -159,7 +171,7 @@ namespace TMech.Core
         /// <returns>The name of the element if it's a form control element. For input-elements the type-name is returned as well (input:text, input:file etc). Returns empty string otherwise.</returns>
         public string GetFormControlType()
         {
-            string? ReturnData = InternalRetryActionInvoker<string>(
+            string? ReturnData = InternalRetryActionInvoker(
                 "Failed to retrieve the name of the form control type",
                 () =>
                 {
@@ -204,7 +216,7 @@ namespace TMech.Core
         /// </summary>
         public ImmutableDictionary<string, string> GetAttributes()
         {
-            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker<Dictionary<string, object>>(
+            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker(
                 "Failed to retrieve attributes and their values",
                 () =>
                 {
@@ -234,7 +246,7 @@ namespace TMech.Core
         /// </summary>
         public ImmutableDictionary<string, string> GetDataSet()
         {
-            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker<Dictionary<string, object>?>(
+            Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker(
                 "Failed to retrieve dataset-attrbute values",
                 () =>
                 {
@@ -264,7 +276,7 @@ namespace TMech.Core
         /// </summary>
         public string GetHTML()
         {
-            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the inner, nested HTML", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner, nested HTML", () =>
             {
                 return (string)JavaScriptExecutor.ExecuteScript("return arguments[0].innerHTML;", new object[] { WrappedElement });
             });
@@ -277,7 +289,7 @@ namespace TMech.Core
         /// </summary>
         public string GetId()
         {
-            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the id", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the id", () =>
             {
                 return WrappedElement.GetAttribute("id");
             });
@@ -290,7 +302,7 @@ namespace TMech.Core
         /// </summary>
         public string GetTagName()
         {
-            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the HTML-tag name", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the HTML-tag name", () =>
             {
                 return WrappedElement.TagName;
             });
@@ -304,7 +316,7 @@ namespace TMech.Core
         /// <param name="removeAdditionalWhitespace">Whether to remove additional whitespace aside from leading and trailing, such as newlines, tabs, linefeeds etc. Optional, defaults to true.</param>
         public string GetText(bool removeAdditionalWhitespace = true)
         {
-            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the inner text value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner text value", () =>
             {
                 string ElementText = WrappedElement.Text;
                 if (!removeAdditionalWhitespace) return ElementText;
@@ -319,7 +331,7 @@ namespace TMech.Core
         /// </summary>
         public string GetValue()
         {
-            string? ReturnData = InternalRetryActionInvoker<string>("Failed to retrieve the value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value", () =>
             {
                 return WrappedElement.GetAttribute("value");
             });
@@ -337,7 +349,7 @@ namespace TMech.Core
         /// <returns>True if the element is enabled or if the element does not support the disabled-attribute, false otherwise.</returns>
         public bool IsEnabled()
         {
-            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is enabled", () =>
+            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is enabled", () =>
             {
                 return WrappedElement.Enabled;
             });
@@ -355,7 +367,7 @@ namespace TMech.Core
         /// </summary>
         public bool IsDisplayed()
         {
-            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is displayed", () =>
+            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is displayed", () =>
             {
                 return WrappedElement.Displayed;
             });
@@ -369,58 +381,11 @@ namespace TMech.Core
         /// <returns>True if the element is an input checkbox and is selected, false otherwise or if the element does not support the checked-attribute.</returns>
         public bool IsSelected()
         {
-            bool ReturnData = InternalRetryActionInvoker<bool>("Failed to determine if element is selected", () =>
+            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is selected", () =>
             {
                 return WrappedElement.Selected;
             });
 
-            return ReturnData;
-        }
-
-        #endregion
-
-        #region FETCH RELATED ELEMENTS
-
-        public Element? FetchNextSibling(string tagName = "*")
-        {
-            var Locator = By.XPath($"./following-sibling::{tagName}[1]");
-            return Elements(ProducedBy.Timeout).Fetch(Locator);
-        }
-
-        public Element? FetchParent()
-        {
-            var Locator = By.XPath("./parent::*[1]");
-            return Elements(ProducedBy.Timeout).Fetch(Locator);
-        }
-
-        public Element? FetchPreviousSibling(string tagName = "*")
-        {
-            var Locator = By.XPath($"./preceding-sibling::{tagName}[1]");
-            return Elements(ProducedBy.Timeout).Fetch(Locator);
-        }
-
-        public Element? FetchAncestor(string tagName = "*")
-        {
-            var Locator = By.XPath($"./ancestor::{tagName}[1]");
-            return Elements(ProducedBy.Timeout).Fetch(Locator);
-        }
-
-        public Element[] FetchDescendants(string tagName = "*", uint threshold = 1)
-        {
-            return InternalGetChildrenOrDescendants(tagName, false, threshold);
-        }
-
-        public Element[] FetchChildren(string tagName = "*", uint threshold = 1)
-        {
-            return InternalGetChildrenOrDescendants(tagName, true, threshold);
-        }
-
-        private Element[] InternalGetChildrenOrDescendants(string tagName, bool children, uint threshold)
-        {
-            string Axis = children ? "child" : "descendant";
-            var Locator = By.XPath($"./{Axis}::{tagName}");
-
-            Element[] ReturnData = Elements(ProducedBy.Timeout).FetchAll(Locator, threshold);
             return ReturnData;
         }
 
@@ -438,20 +403,6 @@ namespace TMech.Core
         public ElementFactory Elements(TimeSpan timeout)
         {
             return new ElementFactory(WrappedElement, timeout);
-        }
-
-        /// <summary>Attempts to returns text of all the label-elements associated with this element.<br/>
-        /// This is done by:
-        /// <list type='bullet'>
-        /// <item>Looking at the parent-element to see if it's a label OR</item>
-        /// <item>Searching all label-elements whose for-attribute value matches the id of this element</item>
-        /// </list>
-        /// Be warned that it can only search for labels within the context that this element was fetched!
-        ///</summary>
-        /// <returns>A list of the text values from all the label-elements associated with this element. Guaranteed to never return null.</returns>
-        public IReadOnlyList<string> GetLabels()
-        {
-            throw new NotImplementedException();
         }
 
         #endregion

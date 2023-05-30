@@ -49,11 +49,11 @@ namespace Tests
             DriverService.Start();
 
             var Options = new ChromeOptions();
-            Options.AddArguments(new string[] { "--headless", "--window-size=2560,1440" });
+            Options.AddArguments(new string[] { "--headless=new", "--window-size=2560,1440" });
             var Webdriver = new ChromeDriver(DriverService, Options);
             Webdriver.Manage().Window.Maximize();
 
-            string? ExecutingLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string ExecutingLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string TestPageURL = "file:///" + new FileInfo(ExecutingLocation + @"\TestPage.html").FullName;
 
             Webdriver.Navigate().GoToUrl(TestPageURL);

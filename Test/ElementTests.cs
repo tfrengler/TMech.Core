@@ -4,7 +4,8 @@ using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using TMech.Core;
+using TMech.Core.Elements;
+using TMech.Core.Elements.Extensions;
 
 namespace Tests
 {
@@ -21,7 +22,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Button-Id"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-Button-Id"));
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.Click());
@@ -36,7 +37,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Button-Id"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-Button-Id"));
             Assert.NotNull(TestElement);
             TestElement.TryActionsThisManyTimes(50);
 
@@ -62,10 +63,66 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Select-Id"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-Select-Id"));
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.ScrollIntoView());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_Actions)]
+        public void Actions_SendKeys_Clear()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+
+            Assert.NotNull(TestElement);
+            Assert.DoesNotThrow(() => TestElement.SendKeys("this is a test"));
+            Assert.AreEqual("this is a test", TestElement.GetValue());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_Actions)]
+        public void Actions_SendKeys_NoClear()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+
+            Assert.NotNull(TestElement);
+            Assert.DoesNotThrow(() => TestElement.SendKeys("this is a test", false));
+            Assert.AreEqual("Context2-InputText-Valuethis is a test", TestElement.GetValue());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_Actions)]
+        public void Actions_SendKeys_Delayed()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Webdriver.ExecuteAsyncScript(@"
+                HideElement(Elements.Context2InputText());
+                arguments[arguments.length - 1]();
+                await Wait(3000);
+                ShowElement(Elements.Context2InputText());
+            ");
+
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+            Assert.NotNull(TestElement);
+
+            var Timer = Stopwatch.StartNew();
+            Assert.DoesNotThrow(() => TestElement.SendKeys("this is a test"));
+            Timer.Stop();
+
+            Assert.Greater(Timer.ElapsedMilliseconds, 2500, "Expected it to take around 2.5 seconds before sending the input succeeded!");
+            Assert.AreEqual("this is a test", TestElement.GetValue());
 
             Webdriver.Quit();
         }
@@ -81,10 +138,10 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElementDateTime = ElementFactory.Fetch(By.Id(JSElements.Context2DateTimeLocal));
-            Element? TestElementRadioButton = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1));
-            Element? TestElementSelect = ElementFactory.Fetch(By.Id(JSElements.Context2Select));
-            Element? TestElementTextarea = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
+            Element TestElementDateTime = ElementFactory.Fetch(By.Id(JSElements.Context2DateTimeLocal));
+            Element TestElementRadioButton = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1));
+            Element TestElementSelect = ElementFactory.Fetch(By.Id(JSElements.Context2Select));
+            Element TestElementTextarea = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
 
             Assert.NotNull(TestElementDateTime);
             Assert.NotNull(TestElementRadioButton);
@@ -105,7 +162,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
             Assert.NotNull(TestElement);
 
             var AttributeNames = TestElement.GetAttributeNames();
@@ -132,7 +189,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
             Assert.NotNull(TestElement);
 
             var ActualAttributes = TestElement.GetAttributes();
@@ -174,7 +231,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div2));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div2));
             Assert.NotNull(TestElement);
 
             var ActualDataSet = TestElement.GetDataSet();
@@ -216,7 +273,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div3));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div3));
 
             Assert.NotNull(TestElement);
             Assert.AreEqual("<span>Context3-Div3-Text</span>", TestElement.GetHTML());
@@ -230,7 +287,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div3));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context3Div3));
 
             Assert.NotNull(TestElement);
             Assert.AreEqual(JSElements.Context3Div3, TestElement.GetId());
@@ -244,7 +301,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Textarea));
 
             Assert.NotNull(TestElement);
             Assert.AreEqual("textarea", TestElement.GetTagName());
@@ -258,7 +315,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context1Div2));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context1Div2));
 
             Assert.NotNull(TestElement);
             Assert.AreEqual("Context1-Div2-Text", TestElement.GetText());
@@ -272,7 +329,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
 
             Assert.NotNull(TestElement);
             Assert.AreEqual("Context2-InputText-Value", TestElement.GetValue());
@@ -291,7 +348,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
             Assert.IsTrue(TestElement.IsDisplayed());
 
             Webdriver.Quit();
@@ -305,7 +362,7 @@ namespace Tests
 
             Webdriver.ExecuteScript(@"HideElement(Elements.Context2InputText());");
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
             Assert.IsFalse(TestElement.IsDisplayed());
 
             Webdriver.Quit();
@@ -317,7 +374,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1));
             Assert.IsTrue(TestElement.IsSelected());
 
             Webdriver.Quit();
@@ -329,7 +386,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
             Assert.IsFalse(TestElement.IsSelected());
 
             Webdriver.Quit();
@@ -341,7 +398,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
             Assert.IsTrue(TestElement.IsEnabled());
 
             Webdriver.Quit();
@@ -353,7 +410,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio3));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio3));
             Assert.IsFalse(TestElement.IsEnabled());
 
             Webdriver.Quit();
@@ -368,7 +425,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out WebDriverException? Error);
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element TestElement, out WebDriverException Error);
             Assert.True(Success);
             Assert.NotNull(TestElement);
             Assert.Null(Error);
@@ -397,7 +454,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element? TestElement, out WebDriverException? Error);
+            bool Success = ElementFactory.TryFetch(By.CssSelector("div#" + JSElements.Context1Div3), out Element TestElement, out WebDriverException Error);
             Assert.True(Success);
             Assert.NotNull(TestElement);
             Assert.Null(Error);
@@ -432,7 +489,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Sibling1 = TestElement.FetchNextSibling();
@@ -453,7 +510,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Sibling1 = TestElement.FetchPreviousSibling();
@@ -474,7 +531,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Parent = TestElement.FetchParent();
@@ -491,7 +548,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Ancestor1 = TestElement.FetchAncestor("fieldset");
@@ -512,7 +569,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Children = TestElement.FetchChildren();
@@ -532,7 +589,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-InputText-Wrapper"));
             Assert.NotNull(TestElement);
 
             var Children = TestElement.FetchChildren("input");
@@ -551,7 +608,7 @@ namespace Tests
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element? TestElement = ElementFactory.Fetch(By.Id("Context2-Inputs"));
+            Element TestElement = ElementFactory.Fetch(By.Id("Context2-Inputs"));
             Assert.NotNull(TestElement);
 
             var Descendants1 = TestElement.FetchDescendants();

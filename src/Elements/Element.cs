@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -130,9 +131,12 @@ namespace TMech.Core.Elements
             });
         }
 
+        /// <summary>
+        /// Attempts to scroll the element into view. This is done using native Javascript and even if the method throws no exceptions there is still no guarantee that the element is indeed in view.
+        /// </summary>
         public void ScrollIntoView()
         {
-            _ = InternalRetryActionInvoker("Failed scroll element into view", () =>
+            _ = InternalRetryActionInvoker("Failed to scroll element into view", () =>
             {
                 JavaScriptExecutor.ExecuteScript("arguments[0].scrollIntoView();", new object[] { WrappedElement });
                 return true;
@@ -149,6 +153,26 @@ namespace TMech.Core.Elements
             {
                 if (clear) WrappedElement.Clear();
                 WrappedElement.SendKeys(input);
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Attempts to clear the element's value.
+        /// </summary>
+        /// <param name="usingKeystrokes">If <see langword="false"/> it will use Selenium's standard method. If <see langword="true"/> then it will be done by using key input (Ctrl + 'a', then 'delete').</param>
+        public void Clear(bool usingKeystrokes = false)
+        {
+            _ = InternalRetryActionInvoker("Failed to clear element", () =>
+            {
+                if (usingKeystrokes)
+                {
+                    WrappedElement.SendKeys(Keys.LeftControl + "a");
+                    WrappedElement.SendKeys(Keys.Delete);
+                    return true;
+                }
+
+                WrappedElement.Clear();
                 return true;
             });
         }
@@ -311,23 +335,27 @@ namespace TMech.Core.Elements
         }
 
         /// <summary>
-        /// Retrieves the text-content of the element, with leading and trailing whitespace removed.
+        /// Retrieves the text-content of the element, with leading and trailing whitespace removed. Never returns null.
         /// </summary>
         /// <param name="removeAdditionalWhitespace">Whether to remove additional whitespace aside from leading and trailing, such as newlines, tabs, linefeeds etc. Optional, defaults to true.</param>
         public string GetText(bool removeAdditionalWhitespace = true)
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner text value", () =>
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+
+            string ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner text value", () =>
             {
                 string ElementText = WrappedElement.Text;
                 if (!removeAdditionalWhitespace) return ElementText;
                 return new Regex("[\t\n\v\f\r]").Replace(ElementText, "").Trim();
             });
 
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+
             return ReturnData ?? string.Empty;
         }
 
         /// <summary>
-        /// Retrieves the trimmed value of the HTML-element. If it does not have value-attribute and empty string is returned.
+        /// Retrieves the trimmed data from the value-attribute of the HTML-element. If it does not have a value-attribute an string is returned. Never returns null.
         /// </summary>
         public string GetValue()
         {

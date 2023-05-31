@@ -7,7 +7,7 @@ using TMech.Core.Exceptions;
 
 namespace TMech.Core.Elements
 {
-    /// <summary>Utility-class used to fetch elements conditionally. Is spawned by <see cref='ElementFactory.TryFetchWhen'/> but can be instantiated manually if desired.<br/>
+    /// <summary>Utility-class used to fetch elements conditionally. Is spawned by <see cref='ElementFactory.FetchWhen'/> but can be instantiated manually if desired.<br/>
     /// Uses the factory to fetch elements but only returns them when certain conditions are met. All methods throw an exception upon timeout.
     /// </summary>
     public sealed class ElementWaiter

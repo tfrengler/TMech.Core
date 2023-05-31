@@ -3,7 +3,6 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
 using System.Diagnostics;
-using TMech.Core;
 using TMech.Core.Elements;
 using TMech.Core.Exceptions;
 
@@ -28,7 +27,7 @@ namespace Tests
             ");
 
             var Timer = Stopwatch.StartNew();
-            ElementWaitException Exception = Assert.Throws<ElementWaitException>(() => ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
+            ElementWaitException Exception = Assert.Throws<ElementWaitException>(() => ElementFactory.FetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -53,7 +52,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context1Div1)).IsDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -76,7 +75,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context1Div1)).IsNotDisplayed());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context1Div1)).IsNotDisplayed());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -100,7 +99,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsEnabled());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2Textarea)).IsEnabled());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -123,7 +122,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Textarea)).IsNotEnabled());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2Textarea)).IsNotEnabled());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -147,7 +146,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsSelected());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2Radio2)).IsSelected());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -171,7 +170,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2Radio2)).IsNotSelected());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2Radio2)).IsNotSelected());
             Timer.Stop();
 
             Webdriver.Quit();
@@ -198,7 +197,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeIsEqualTo("value", "Attributes_IsEqual"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2InputText)).AttributeIsEqualTo("value", "Attributes_IsEqual"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -221,7 +220,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeContains("value", "es_Con"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2InputText)).AttributeContains("value", "es_Con"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -244,7 +243,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeEndsWith("value", "_This_Value"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2InputText)).AttributeEndsWith("value", "_This_Value"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -267,7 +266,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context2InputText)).AttributeStartsWith("value", "Attributes_StartWith"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context2InputText)).AttributeStartsWith("value", "Attributes_StartWith"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -295,7 +294,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsEqualTo("Content_IsEqual"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).ContentIsEqualTo("Content_IsEqual"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -318,7 +317,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentContains("nt_Co"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).ContentContains("nt_Co"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -341,7 +340,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentEndsWith("_This_Value"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).ContentEndsWith("_This_Value"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -364,7 +363,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentStartsWith("Content_StartsWith"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).ContentStartsWith("Content_StartsWith"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -388,7 +387,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).ContentIsNotEqualTo("Content_NotEqualTo"));
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).ContentIsNotEqualTo("Content_NotEqualTo"));
             Timer.Stop();
 
             Webdriver.Quit();
@@ -412,7 +411,7 @@ namespace Tests
 
             var Timer = Stopwatch.StartNew();
             Element? TestElement = null;
-            Assert.DoesNotThrow(() => TestElement = ElementFactory.TryFetchWhen(By.Id(JSElements.Context3Div2)).HasContent());
+            Assert.DoesNotThrow(() => TestElement = ElementFactory.FetchWhen(By.Id(JSElements.Context3Div2)).HasContent());
             Timer.Stop();
 
             Webdriver.Quit();

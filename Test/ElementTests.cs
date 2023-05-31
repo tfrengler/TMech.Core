@@ -127,6 +127,36 @@ namespace Tests
             Webdriver.Quit();
         }
 
+        [TestCase(Category = Category_Actions)]
+        public void Actions_Clear_Normal()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+
+            Assert.NotNull(TestElement);
+            Assert.DoesNotThrow(() => TestElement.Clear());
+            Assert.AreEqual("", TestElement.GetValue());
+
+            Webdriver.Quit();
+        }
+
+        [TestCase(Category = Category_Actions)]
+        public void Actions_Clear_Keystroke()
+        {
+            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
+            var ElementFactory = new ElementFactory(Webdriver);
+
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+
+            Assert.NotNull(TestElement);
+            Assert.DoesNotThrow(() => TestElement.Clear(true));
+            Assert.AreEqual("", TestElement.GetValue());
+
+            Webdriver.Quit();
+        }
+
         #endregion
 
         #region DATA GETTERS

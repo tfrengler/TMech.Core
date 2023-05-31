@@ -12,7 +12,7 @@ namespace TMech.Core.Elements
 
     /// <summary>
     /// <para>A class for fetching HTML-elements - in the form of Element-instances - that may be sensitive to errors due to for example dynamic loading/background updates etc.<br/>
-    /// Also provides conditional locating strategies (see <see cref="TryFetchWhen"/>) for fetching elements once they fullfill certain criteria.</para>
+    /// Also provides conditional locating strategies (see <see cref="FetchWhen"/>) for fetching elements once they fullfill certain criteria.</para>
     /// <para>Built around the central premise that elements may not always be available the moment you search for them, and that not finding them does not by default constitute an exception.<br/>
     /// </summary>
     public sealed class ElementFactory
@@ -169,7 +169,7 @@ namespace TMech.Core.Elements
         /// <summary>
         /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
         /// </summary>
-        public ElementWaiter TryFetchWhen(By locator)
+        public ElementWaiter FetchWhen(By locator)
         {
             return new ElementWaiter(this, locator, SearchContext, Timeout);
         }
@@ -177,7 +177,7 @@ namespace TMech.Core.Elements
         /// <summary>
         /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
         /// </summary>
-        public ElementWaiter TryFetchWhen(By locator, TimeSpan timeout)
+        public ElementWaiter FetchWhen(By locator, TimeSpan timeout)
         {
             return new ElementWaiter(this, locator, SearchContext, timeout);
         }

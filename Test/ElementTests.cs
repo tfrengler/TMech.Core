@@ -15,7 +15,7 @@ namespace Tests
     {
         #region ACTIONS
 
-        private const string Category_Actions = "Element Actions";
+        private const string Category_Actions = "Element_Actions";
         [TestCase(Category=Category_Actions)]
         public void Actions_Click()
         {
@@ -81,7 +81,7 @@ namespace Tests
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.SendKeys("this is a test"));
-            Assert.AreEqual("this is a test", TestElement.GetValue());
+            Assert.AreEqual("this is a test", TestElement.WrappedElement.GetAttribute("value"));
 
             Webdriver.Quit();
         }
@@ -96,7 +96,7 @@ namespace Tests
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.SendKeys("this is a test", false));
-            Assert.AreEqual("Context2-InputText-Valuethis is a test", TestElement.GetValue());
+            Assert.AreEqual("Context2-InputText-Valuethis is a test", TestElement.WrappedElement.GetAttribute("value"));
 
             Webdriver.Quit();
         }
@@ -122,7 +122,7 @@ namespace Tests
             Timer.Stop();
 
             Assert.Greater(Timer.ElapsedMilliseconds, 2500, "Expected it to take around 2.5 seconds before sending the input succeeded!");
-            Assert.AreEqual("this is a test", TestElement.GetValue());
+            Assert.AreEqual("this is a test", TestElement.WrappedElement.GetAttribute("value"));
 
             Webdriver.Quit();
         }
@@ -137,7 +137,7 @@ namespace Tests
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.Clear());
-            Assert.AreEqual("", TestElement.GetValue());
+            Assert.AreEqual("", TestElement.WrappedElement.GetAttribute("value"));
 
             Webdriver.Quit();
         }
@@ -152,7 +152,7 @@ namespace Tests
 
             Assert.NotNull(TestElement);
             Assert.DoesNotThrow(() => TestElement.Clear(true));
-            Assert.AreEqual("", TestElement.GetValue());
+            Assert.AreEqual("", TestElement.WrappedElement.GetAttribute("value"));
 
             Webdriver.Quit();
         }
@@ -161,7 +161,7 @@ namespace Tests
 
         #region DATA GETTERS
 
-        private const string Category_DataGetters = "Element Data Getters";
+        private const string Category_DataGetters = "Element_DataGetters";
         [TestCase(Category=Category_DataGetters)]
         public void DataGetters_GetFormControlType()
         {
@@ -353,16 +353,18 @@ namespace Tests
             Webdriver.Quit();
         }
 
-        [TestCase(Category=Category_DataGetters)]
-        public void DataGetters_GetValue()
+        [TestCase(Category = Category_DataGetters)]
+        public void DataGetters_GetAttribute()
         {
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
             var ElementFactory = new ElementFactory(Webdriver);
 
-            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2InputText));
+            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2File));
 
             Assert.NotNull(TestElement);
-            Assert.AreEqual("Context2-InputText-Value", TestElement.GetValue());
+            Assert.AreEqual(JSElements.Context2File, TestElement.GetAttribute("id"));
+            Assert.AreEqual("file", TestElement.GetAttribute("type"));
+            Assert.AreEqual("Context2-File-Name", TestElement.GetAttribute("name"));
 
             Webdriver.Quit();
         }
@@ -371,7 +373,7 @@ namespace Tests
 
         #region STATE CHECKERS
 
-        private const string Category_StateCheckers = "Element State Checkers";
+        private const string Category_StateCheckers = "Element_StateCheckers";
         [TestCase(Category=Category_StateCheckers)]
         public void StateCheckers_IsDisplayed()
         {
@@ -398,57 +400,9 @@ namespace Tests
             Webdriver.Quit();
         }
 
-        [TestCase(Category=Category_StateCheckers)]
-        public void StateCheckers_IsSelected()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1));
-            Assert.IsTrue(TestElement.IsSelected());
-
-            Webdriver.Quit();
-        }
-
-        [TestCase(Category=Category_StateCheckers)]
-        public void StateCheckers_IsNotSelected()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
-            Assert.IsFalse(TestElement.IsSelected());
-
-            Webdriver.Quit();
-        }
-
-        [TestCase(Category=Category_StateCheckers)]
-        public void StateCheckers_IsEnabled()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2));
-            Assert.IsTrue(TestElement.IsEnabled());
-
-            Webdriver.Quit();
-        }
-
-        [TestCase(Category=Category_StateCheckers)]
-        public void StateCheckers_IsNotEnabled()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            Element TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio3));
-            Assert.IsFalse(TestElement.IsEnabled());
-
-            Webdriver.Quit();
-        }
-
         #region ELEMENT STALENESS
 
-        private const string Category_Staleness = "Element Staleness";
+        private const string Category_Staleness = "Element_Staleness";
         [TestCase(Category=Category_Staleness)]
         public void ReacquireElementOnStaleException()
         {
@@ -512,7 +466,7 @@ namespace Tests
 
         #region RELATIONAL ELEMENTS
 
-        private const string Category_RelationalElements = "Category_RelationalElements";
+        private const string Category_RelationalElements = "Element_RelationalElements";
         [TestCase(Category = Category_RelationalElements)]
         public void RelationalElements_NextSibling()
         {
@@ -528,8 +482,8 @@ namespace Tests
             Assert.NotNull(Sibling1);
             Assert.NotNull(Sibling2);
 
-            Assert.AreEqual("Context2-Checkbox-Wrapper", Sibling1.GetId());
-            Assert.AreEqual("Context2-Checkbox-Wrapper", Sibling2.GetId());
+            Assert.AreEqual("Context2-InputNumber-Wrapper", Sibling1.GetId());
+            Assert.AreEqual("Context2-InputNumber-Wrapper", Sibling2.GetId());
 
             Webdriver.Quit();
         }
@@ -647,8 +601,8 @@ namespace Tests
             Assert.NotNull(Descendants1);
             Assert.NotNull(Descendants2);
 
-            Assert.AreEqual(Descendants1.Length, 19);
-            Assert.AreEqual(Descendants2.Length, 6);
+            Assert.AreEqual(22, Descendants1.Length);
+            Assert.AreEqual(7, Descendants2.Length);
 
             Webdriver.Quit();
         }

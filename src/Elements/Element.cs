@@ -355,13 +355,13 @@ namespace TMech.Core.Elements
         }
 
         /// <summary>
-        /// Retrieves the trimmed data from the value-attribute of the HTML-element. If it does not have a value-attribute an string is returned. Never returns null.
+        /// Returns the value of a given attribute.
         /// </summary>
-        public string GetValue()
+        public string GetAttribute(string attributeName)
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value for attribute with name: " + attributeName, () =>
             {
-                return WrappedElement.GetAttribute("value");
+                return WrappedElement.GetAttribute(attributeName);
             });
 
             return ReturnData ?? string.Empty;
@@ -370,20 +370,6 @@ namespace TMech.Core.Elements
         #endregion
 
         #region STATE CHECKERS
-
-        /// <summary>
-        /// Checks whether the element is enabled (equivalent to checking the 'disable'-attribute). Only relevant for form-controls but safe to call on any element.
-        /// </summary>
-        /// <returns>True if the element is enabled or if the element does not support the disabled-attribute, false otherwise.</returns>
-        public bool IsEnabled()
-        {
-            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is enabled", () =>
-            {
-                return WrappedElement.Enabled;
-            });
-
-            return ReturnData;
-        }
 
         /// <summary>
         /// Checks whether the element is displayed. The criteria for an element to be displayed typically means:
@@ -398,20 +384,6 @@ namespace TMech.Core.Elements
             bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is displayed", () =>
             {
                 return WrappedElement.Displayed;
-            });
-
-            return ReturnData;
-        }
-
-        /// <summary>
-        /// Checks whether the element is selected (equivalent to checking for the 'checked'-attribute). Only relevant for input checkbox-elements but safe to call on any element.
-        /// </summary>
-        /// <returns>True if the element is an input checkbox and is selected, false otherwise or if the element does not support the checked-attribute.</returns>
-        public bool IsSelected()
-        {
-            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is selected", () =>
-            {
-                return WrappedElement.Selected;
             });
 
             return ReturnData;

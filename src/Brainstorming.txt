@@ -110,25 +110,23 @@ public class Element
     public bool IsRequired() {}                             // Proxy for IWebElement.GetAttribute("required");
     public bool IsDisplayed() {}                            // Proxy for IWebElement.Displayed
     public void Click(bool noRetry) {}                      // Proxy for IWebElement.Click(); noRetry means no continous clicking in case of StaleElementReferenceException errors
+}
 
-    // Only relevant for certain form control elements (input,textarea,select)
-    // To find labels first check if the direct ancestor (parent) is a label. Otherwise search for labels where the for-attribute is equal to this element's id.
-    public bool HasLabels() {}                              // Returns false for anything that is not a form control element
-    public string[] GetLabels() {}                          // Returns an empty array for anything that is not a form control element
+FormControl
+{
+    string GetValue()
+    void SetValue(string input)
 
-    public List AsList() {}
-    public Table AsTable() {}
-    public TableRow AsTableRow() {}
-    public TextArea AsTextArea() {}
-    public Text AsText() {}
-    public Date AsDate() {}
-    public DateTime AsDateTime() {}
-    public Checkbox AsCheckbox() {}
-    public File AsFile() {}
-    public File AsMultiFile() {}
-    public Radio AsRadio() {}
-    public Select AsSelect() {}
-    public MultiSelect AsMultiSelect() {}
+    bool IsEnabled()
+    bool IsRequired()
+    bool IsSelected()
+    bool IsReadOnly()
+    int GetMin()
+    int GetMax()
+    int GetMaxLength()
+    int GetMinLength()
+    string GetSource()
+    int GetStep()
 }
 
 #NOTE
@@ -139,35 +137,22 @@ What constitutes 'data' is dependent on context:
 Getting and setting data is also element-dependent.
 Therefore each element-subclass is responsible for implementing their own SetData- and GetData-methods.
 
-## INTERFACES:
-ISetsSingleData<T>
-    - void SetData(T data)
-ISetsMultiData<T>
-    - void SetDataByText(T[] data)
-    - void SetDataByValue(T[] data)
-IHasOptions<T>
-    - T[] GetTextOptions()
-    - T[] GetValueOptions()
-IHasSingleData<T>
-    - T GetData()
-IHasMultiData<T>
-    - T[] GetAllData()
-IHasChildren
-    - IElement[] GetChildren()
-    - uint GetChildCount()
-
 ## ELEMENTS:
+
 #Form elements:
-<textarea>                      = TextArea         : FormControl, ISetsSingleData<string>, IHasSingleData<string>
-<input type='date'>             = Date             : FormControl, ISetsSingleData<DateTime>, IHasSingleData<DateTime>
-<input type='datetime-local'>   = DateTime         : FormControl, ISetsSingleData<DateTime>, IHasSingleData<DateTime>
-<input type='checkbox'>         = Checkbox         : FormControl, ISetsSingleData<bool>, IHasSingleData<bool>
-<input type='file'>             = File             : FormControl, ISetsSingleData<FileInfo>, IHasSingleData<FileInfo>
-<input type='file' multiple>    = MultiFile        : FormControl, IHasMultiData<FileInfo>, ISetsMultiData<FileInfo>
-<input type='radio'>            = Radio            : FormControl, ISetsSingleData<string>, IHasSingleData<string>, IHasOptions<string>
-<select>                        = Select           : FormControl, IHasChildren, ISetsSingleData<string>, IHasSingleData<string>, IHasOptions<string>
-<select multiple='true'>        = MultiSelect      : FormControl, IHasChildren, IHasMultiData<string>, ISetsMultiData<string>, IHasOptions<string>
+
+<textarea>,<input type='text'/> = FormControl
+<input type='date'>             = DateElement      : FormControl
+<input type='datetime-local'>   = DateElement      : FormControl
+<input type='checkbox'>         = CheckboxElement  : FormControl
+<input type='file'>             = FileElement      : FormControl
+<input type='file' multiple>    = FileElement      : FormControl
+<input type='radio'>            = RadioElement     : FormControl
+<select>                        = DropdownElement  : FormControl
+<select multiple='true'>        = DropdownElement  : FormControl
+
 #Others:
+
 <table>                         = Table            : Element
     - TableRow[] GetColumns()
     - TableRow[] GetRows()

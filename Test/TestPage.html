@@ -24,27 +24,31 @@
 
                 <div id="Context2-Button-Wrapper">
                     <label for="Context2-Button-Id">Context2-Button-Label</label>
-                    <input id="Context2-Button-Id" type="button" value="Context2-Button-Value" name="Context2-Button-Name" >
+                    <input id="Context2-Button-Id" type="button" value="Context2-Button-Value" name="Context2-Button-Name">
                 </div>
                 <div id="Context2-InputText-Wrapper">
                     <label for="Context2-InputText-Id">Context2-InputText-Label</label>
-                    <input id="Context2-InputText-Id" type="text" name="Context2-InputText-Name" value="Context2-InputText-Value" >
+                    <input id="Context2-InputText-Id" type="text" name="Context2-InputText-Name" maxlength="123" minlength="2" value="Context2-InputText-Value">
+                </div>
+                <div id="Context2-InputNumber-Wrapper">
+                    <label for="Context2-InputNumber-Id">Context2-InputNumber-Label</label>
+                    <input id="Context2-InputNumber-Id" type="number" name="Context2-InputNumber-Name" min="2" max="102" step="1" value="42">
                 </div>
                 <div id="Context2-Checkbox-Wrapper">
                     <label for="Context2-Checkbox-Id">Context2-Checkbox-Label</label>
-                    <input id="Context2-Checkbox-Id" type="checkbox" name="Context2-Checkbox-Name" >
+                    <input id="Context2-Checkbox-Id" type="checkbox" name="Context2-Checkbox-Name">
                 </div>
                 <div id="Context2-File-Wrapper">
                     <label for="Context2-File-Id">Context2-File-Label</label>
-                    <input id="Context2-File-Id" type="file" name="Context2-File-Name" >
+                    <input id="Context2-File-Id" type="file" name="Context2-File-Name">
                 </div>
                 <div id="Context2-DateTime-Wrapper">
                     <label for="Context2-DateTime-Id">Context2-DateTime-Label</label>
-                    <input id="Context2-DateTime-Id" type="date" name="Context2-DateTime-Name" >
+                    <input id="Context2-DateTime-Id" type="date" name="Context2-DateTime-Name">
                 </div>
                 <div id="Context2-DateTimeLocal-Wrapper">
                     <label for="Context2-DateTimeLocal-Id">Context2-DateTimeLocal-Label</label>
-                    <input id="Context2-DateTimeLocal-Id" type="datetime-local" name="Context2-DateTimeLocal-Name" >
+                    <input id="Context2-DateTimeLocal-Id" type="datetime-local" name="Context2-DateTimeLocal-Name">
                 </div>
 
             </fieldset>
@@ -60,18 +64,27 @@
                 </select>
             </fieldset>
 
-            <label for="Context2-Textarea1-Id">Context2-Textarea1-Label</label><br/>
+            <label for="Context2-Textarea1-Id">Context2-Textarea1-Label</label><br />
             <textarea id="Context2-Textarea-Id" name="Context2-Textarea1-Name" cols="30" rows="10"></textarea>
 
-        
+            <div>
+                <label for="Context2-Hyperlink-Id">Context2-Hyperlink-Label</label><br />
+                <a id="Context2-Hyperlink-Id" name="Context2-Hyperlink-Name" href="http://google.com">Context2-Hyperlink-Text</a>
+            </div>
+
+            <div>
+                <label for="Context2-Image-Id">Context2-Image-Label</label><br />
+                <img id="Context2-Image-Id" name="Context2-Image-Name" src="http://somewhere.com/doesnotexist.jpeg" />
+            </div>
+
             <fieldset id="Context2-RadioButtons">
                 <legend>RADIO BUTTONS</legend>
 
                 <label for="Context2-Radio1-Id">Context2-Radio1-Label</label>
-                <input id="Context2-Radio1-Id" checked type="radio" name="Context2-Radio-Name" value="Context2-Radio1-Value"><br/>
+                <input id="Context2-Radio1-Id" checked type="radio" name="Context2-Radio-Name" value="Context2-Radio1-Value"><br />
 
                 <label for="Context2-Radio2-Id">Context2-Radio2-Label</label>
-                <input id="Context2-Radio2-Id" type="radio" name="Context2-Radio-Name" value="Context2-Radio2-Value"><br/>
+                <input id="Context2-Radio2-Id" type="radio" name="Context2-Radio-Name" value="Context2-Radio2-Value"><br />
 
                 <label for="Context2-Radio3-Id">Context2-Radio3-Label</label>
                 <input id="Context2-Radio3-Id" disabled type="radio" name="Context2-Radio-Name" value="Context2-Radio3-Value">

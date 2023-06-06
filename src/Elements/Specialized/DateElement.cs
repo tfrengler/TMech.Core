@@ -7,7 +7,7 @@ namespace TMech.Core.Elements.Specialized
     /// <summary>
     /// Represents an element whose value-attribute is treated as a 'date'. This is meant for an input-element of type 'date', but can also be used by input-text elements that contain date-strings.
     /// </summary>
-    public sealed class DateElement : Element
+    public sealed class DateElement : FormControlElement
     {
         public DateElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple)
         {

@@ -16,30 +16,6 @@ namespace Tests
 
         public const string Category_StateCheckers = "FormControl_StateCheckers";
         [TestCase(Category = Category_StateCheckers)]
-        public void StateCheckers_IsSelected()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            FormControlElement TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio1)).AsFormControl();
-            Assert.IsTrue(TestElement.IsSelected());
-
-            Webdriver.Quit();
-        }
-
-        [TestCase(Category = Category_StateCheckers)]
-        public void StateCheckers_IsNotSelected()
-        {
-            ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();
-            var ElementFactory = new ElementFactory(Webdriver);
-
-            FormControlElement TestElement = ElementFactory.Fetch(By.Id(JSElements.Context2Radio2)).AsFormControl();
-            Assert.IsFalse(TestElement.IsSelected());
-
-            Webdriver.Quit();
-        }
-
-        [TestCase(Category = Category_StateCheckers)]
         public void StateCheckers_IsEnabled()
         {
             ChromeDriver Webdriver = Shared.SetUpWebdriverAndGoToTestPage();

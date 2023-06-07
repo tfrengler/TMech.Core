@@ -28,5 +28,25 @@ namespace TMech.Core.Elements.Extensions
         {
             return new DropdownElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
         }
+
+        public static BooleanElement AsBoolean(this Element self)
+        {
+            return new BooleanElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
+
+        public static BooleanElement AsBoolean(this FormControlElement self)
+        {
+            return new BooleanElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
+
+        public static IntegerElement AsInteger(this Element self)
+        {
+            return new IntegerElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
+
+        public static IntegerElement AsInteger(this FormControlElement self)
+        {
+            return new IntegerElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
     }
 }

@@ -37,7 +37,7 @@ namespace TMech.Core.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the name-attribute.
+        /// Retrieves the value of the name-attribute. Used by all form control elements to uniquely identify them within a form, and is the identifier used when the form is submitted.
         /// </summary>
         /// <returns></returns>
         public string GetName()
@@ -158,7 +158,7 @@ namespace TMech.Core.Elements.Specialized
         #region STATE CHECKERS
 
         /// <summary>
-        /// Checks whether the form control element is readonly.
+        /// Checks whether the form control element is readonly meaning the element not editable by the user.
         /// </summary>
         /// <returns><see langword="true"/> if the element is required or <see langword="false"/> if not or the element does not support the required-attribute.</returns>
         public bool IsRequired()
@@ -173,21 +173,7 @@ namespace TMech.Core.Elements.Specialized
         }
 
         /// <summary>
-        /// Checks whether the form control element is selected.
-        /// </summary>
-        /// <returns><see langword="true"/> if the element is selected or <see langword="false"/> if not or the element is not selectable (is not a radio-button or checkbox).</returns>
-        public bool IsSelected()
-        {
-            bool ReturnData = InternalRetryActionInvoker("Failed to determine if form-element is selected", () =>
-            {
-                return WrappedElement.Selected;
-            });
-
-            return ReturnData;
-        }
-
-        /// <summary>
-        /// Checks whether the form control element is readonly.
+        /// Checks whether the form control element is readonly. Is supported by the text, search, url, tel, email, date, month, week, time, datetime-local, number, and password input types
         /// </summary>
         /// <returns><see langword="true"/> if the element is enabled or <see langword="false"/> if not or the element does not support the readonly-attribute.</returns>
         public bool IsReadOnly()
@@ -202,7 +188,7 @@ namespace TMech.Core.Elements.Specialized
         }
 
         /// <summary>
-        /// Checks whether the form control element is enabled.
+        /// Checks whether the form control element is enabled. Specifically, disabled inputs do not receive the click event, and disabled inputs are not submitted with the form.
         /// </summary>
         /// <returns><see langword="true"/> if the element is enabled or if the element does not support the disabled-attribute, <see langword="false"/> otherwise.</returns>
         public bool IsEnabled()

@@ -35,12 +35,19 @@ namespace Tests
         public const string Context2DateTimeWrapper = "Context2-DateTime-Wrapper";
         public const string Context2DateTimeLocalWrapper = "Context2-DateTimeLocal-Wrapper";
 
-        public const string Context2Dropdown = "Context2-Dropdown-Id";
+        public const string Context2Dropdown = "Context2-Select";
         public const string Context2Select = "Context2-Select-Id";
-
+        public const string Context2OptionNIL1 = "Context2-Option-NIL1";
         public const string Context2Option1 = "Context2-Option1-Id";
         public const string Context2Option2 = "Context2-Option2-Id";
         public const string Context2Option3 = "Context2-Option3-Id";
+
+        public const string Context2DropdownMulti = "Context2-SelectMulti";
+        public const string Context2SelectMulti = "Context2-SelectMulti-Id";
+        public const string Context2OptionNIL2 = "Context2-Option-NIL2";
+        public const string Context2Option4 = "Context2-Option4-Id";
+        public const string Context2Option5 = "Context2-Option5-Id";
+        public const string Context2Option6 = "Context2-Option6-Id";
 
         public const string Context2Textarea = "Context2-Textarea-Id";
         public const string Context2Hyperlink = "Context2-Hyperlink-Id";

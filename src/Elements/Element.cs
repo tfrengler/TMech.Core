@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -109,7 +108,7 @@ namespace TMech.Core.Elements
         }
 
         /// <summary>
-        /// Disables the behaviour where if an action fails - and it is because a StaleElementReferenceException - it would try to reacquire the element reference again.<br/>
+        /// Disables the behaviour where if an action fails - and it is because of a StaleElementReferenceException - it would try to reacquire the element reference again.<br/>
         /// This can be beneficial if your locator is not precise enough, and there's a decent chance that another element that matches your locator would be fetched intstead, which can lead to undesired or hard to debug behaviour.
         /// </summary>
         /// <param name="attempts"></param>
@@ -149,7 +148,7 @@ namespace TMech.Core.Elements
         /// <param name="clear">Whether to clear the value in the element first. If <see langword="false"/> then the <paramref name="input"/> is appended instead.</param>
         public void SendKeys(string input, bool clear = true)
         {
-            _ = InternalRetryActionInvoker("Failed to send keys to element", () =>
+            _ = InternalRetryActionInvoker($"Failed to send keys to element (clear? {clear})", () =>
             {
                 if (clear) WrappedElement.Clear();
                 WrappedElement.SendKeys(input);

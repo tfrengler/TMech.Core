@@ -18,5 +18,15 @@ namespace TMech.Core.Elements.Extensions
         {
             return new DateElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
         }
+
+        public static DropdownElement AsDropdown(this Element self)
+        {
+            return new DropdownElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
+
+        public static DropdownElement AsDropdown(this FormControlElement self)
+        {
+            return new DropdownElement(self.WrappedElement, self.ProducedBy, self.RelatedLocator, self.RelatedContext, self.LocatedAsMultiple);
+        }
     }
 }

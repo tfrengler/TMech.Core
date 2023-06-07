@@ -3,7 +3,9 @@
 namespace TMech.Core.Elements.Specialized
 {
     /// <summary>
-    /// Represents a form control element, such as input, radio, textarea etc. Allows access to standard methods that are more or less applicable to all form controls, and allows you to set and get its data (stored in the value-attribute) as text (string).
+    /// Represents a form control element, such as &lt;input&gt;, &lt;option&gt;, &lt;radio&gt;, &lt;textarea&gt; etc.<br/>
+    /// Allows access to standard methods that are (more or less) applicable to all form controls such as getting the name-attribute, input-type, maxlength-attribute, src-attribute etc.<br/>
+    /// Getting and setting the data is exposed via the value-attribute which is treated as text. For more specialized elements with strong data types see other classes in this namespace.
     /// </summary>
     public class FormControlElement : Element
     {
@@ -26,7 +28,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns></returns>
         public string GetValue()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control element", () =>
             {
                 return WrappedElement.GetAttribute("value");
             });

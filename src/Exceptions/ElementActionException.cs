@@ -3,7 +3,7 @@ using System;
 namespace TMech.Core.Exceptions
 {
     [Serializable]
-    public class ElementInteractionException : TMechException
+    public class ElementInteractionException : FetchContextException
     {
         public ElementInteractionException() { }
 

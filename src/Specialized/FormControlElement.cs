@@ -1,24 +1,67 @@
 ﻿using OpenQA.Selenium;
-
-namespace TMech.Core.Elements.Specialized
+using System.IO;
+using System.Threading;
+/*
+namespace TMech.Core.Specialized
 {
     /// <summary>
-    /// Represents a form control element, such as &lt;input&gt;, &lt;option&gt;, &lt;radio&gt;, &lt;textarea&gt; etc.<br/>
-    /// Allows access to standard methods that are (more or less) applicable to all form controls such as getting the name-attribute, input-type, maxlength-attribute, src-attribute etc.<br/>
+    /// <para>
+    /// Represents a form control element, such as &lt;input&gt;, &lt;option&gt;, &lt;radio&gt;, &lt;textarea&gt; etc.
+    /// </para>
+    /// <para>
+    /// Allows access to standard methods that are (more or less) applicable to all form controls such as getting the name-attribute, input-type, maxlength-attribute, src-attribute etc.
+    /// </para>
     /// Getting and setting the data is exposed via the value-attribute which is treated as text. For more specialized elements with strong data types see other classes in this namespace.
     /// </summary>
     public class FormControlElement : Element
     {
-        public FormControlElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
+        internal FormControlElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
             : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple) { }
 
+        protected bool RobustSelection = false;
+
         /// <summary>
-        /// Attempts to set data in this input-text element by sending <paramref name="input"/> as keystrokes.
+        /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
+        /// </summary>
+        public FormControlElement WithRobustSelection()
+        {
+            RobustSelection = true;
+            return this;
+        }
+
+        #region DATA SETTERS
+
+        /// <summary>
+        /// Attempts to set data in this formcontrol element by sending <paramref name="input"/> as keystrokes. This will fail with an exception if not an element that accepts key-input (textarea, input-text, -date, -number etc).
         /// </summary>
         public void SetValue(string input, bool clear = true)
         {
-            SendKeys(input, clear);
+            _ = InternalRetryActionInvoker($"Failed to set value in formcontrol-element (clear? {clear})", () =>
+            {
+                if (clear) WrappedElement.Clear();
+                WrappedElement.SendKeys(input);
+                if (!RobustSelection) return true;
+
+                Thread.Sleep((int)ProducedBy.PollingInterval);
+                return WrappedElement.GetAttribute("value") == input;
+            });
         }
+
+        /// <summary>
+        /// Attemps to upload a file to the formcontrol element. Will fail if the element is not input[type='file'] or <paramref name="input"/> does not exists.
+        /// </summary>
+        /// <param name="input">The full, absolute path of the file you wish to upload including file extension.</param>
+        public void UploadFile(string input)
+        {
+            if (!System.IO.File.Exists(input))
+            {
+                throw new FileNotFoundException("Unable to upload file to form control element as file cannot be found", input);
+            }
+
+            SendKeys(input, false);
+        }
+
+        #endregion
 
         #region DATA RETRIEVERS
 
@@ -42,7 +85,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns></returns>
         public string GetName()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the form control name-value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's name-attribute", () =>
             {
                 return WrappedElement.GetAttribute("name");
             });
@@ -70,7 +113,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the min-attribute OR the value can not be parsed.</returns>
         public int? GetMin()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the form control min-value", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's min-attribute", () =>
             {
                 return WrappedElement.GetAttribute("min");
             });
@@ -85,7 +128,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the max-attribute OR the value can not be parsed.</returns>
         public int? GetMax()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the form control max-value", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's max-attribute", () =>
             {
                 return WrappedElement.GetAttribute("max");
             });
@@ -100,7 +143,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value as an integer or <see langword="null"/> if the element does not have the maxlength-attribute OR the value can not be parsed.</returns>
         public int? GetMaxLength()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the form control maxlength-value", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's maxlength-attribute", () =>
             {
                 return WrappedElement.GetAttribute("maxlength");
             });
@@ -115,7 +158,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value as an integer or <see langword="null"/> if the element does not have the minlength-attribute OR the value can not be parsed.</returns>
         public int? GetMinLength()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the form control minlength-value", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's minlength-attribute", () =>
             {
                 return WrappedElement.GetAttribute("minlength");
             });
@@ -130,7 +173,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value of the src-attribute or an empty string if the element does not have a src-attribute.</returns>
         public string GetSource()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the form control src-value", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's src-attribute", () =>
             {
                 return WrappedElement.GetAttribute("src");
             });
@@ -144,7 +187,7 @@ namespace TMech.Core.Elements.Specialized
         /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the step-attribute OR the value can not be parsed.</returns>
         public int? GetStep()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the form control step-value", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's step-attribute", () =>
             {
                 return WrappedElement.GetAttribute("step");
             });
@@ -204,3 +247,4 @@ namespace TMech.Core.Elements.Specialized
         #endregion
     }
 }
+*/

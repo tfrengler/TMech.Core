@@ -1,83 +1,119 @@
-public class Element
+public sealed class FetchContext
 {
-  public WebElement WrappedElement { get; private set; }
-  public ElementFactory ProducedBy { get; }
-  public By RelatedLocator { get; }
-  public ISearchContext RelatedContext { get; private set; }
-  public bool LocatedAsMultiple { get; }
-  public uint ActionAttempts { get; private set; } = 50;
-  public Guid Identifier { get; }
-  public IEnumerable<Element> GetElementChain()
-  public Element Reacquire(bool throwOnError)
-  public Element TryActionsThisManyTimes(uint attempts)
-  public Element DoNotReacquireElementIfStale()
-  public WebElement UnWrap()
-  public Element Click()
-  public Element ClickUntil(Func<Element, bool> predicate)
-  public Element ScrollIntoView()
-  public Element SendKeys(string input, bool clear = true)
-  public Element Clear(bool usingKeystrokes = false)
-  public string GetFormControlType()
-  public ImmutableList<string> GetAttributeNames()
-  public ImmutableDictionary<string, string> GetAttributes()
-  public ImmutableDictionary<string, string> GetDataSet()
-  public string GetHTML()
-  public string GetId()
-  public string GetTagName()
-  public string GetText(bool removeAdditionalWhitespace = true)
-  public string GetAttribute(string attributeName)
-  public bool IsDisplayed()
-  public ElementFactory Elements()
-  public ElementFactory Elements(TimeSpan timeout)
-}
+  public static FetchContext Create(ISearchContext context)
+  public static FetchContext Create(ISearchContext context, TimeSpan timeout)
+  internal FetchContext(ISearchContext context, TimeSpan timeout)
 
-public sealed class ElementFactory
-{
   public TimeSpan DefaultTimeout { get; } = TimeSpan.FromSeconds(5.0d);
-  public uint PollingInterval { get; set; } = 300;
+  public int PollingInterval { get; set; } = 300;
   public TimeSpan Timeout { get; }
   public ISearchContext SearchContext { get; private set; }
   public Element? SpawnedBy { get; init; }
-  public ElementFactory(ISearchContext context)
-  public ElementFactory(ISearchContext context, TimeSpan timeout)
+
   public Element Fetch(By locator)
-  public Element Fetch(By locator, TimeSpan timeout)
   public Element[] FetchAll(By locator, uint threshold = 1)
-  public Element[] FetchAll(By locator, TimeSpan timeout, uint threshold = 1)
-  public bool TryFetch(By locator, [NotNullWhen(true)] out Element element, [NotNullWhen(false)] out Exception error)
-  public bool TryFetch(By locator, TimeSpan timeout, [NotNullWhen(true)] out Element element, [NotNullWhen(false)] out Exception error)
+
+  public bool TryFetch(By locator, [NotNullWhen(true)] out Element? element, [NotNullWhen(false)] out Exception? error)
   public bool TryFetchAll(By locator, out Element[] elements, uint threshold = 1)
-  public bool TryFetchAll(By locator, TimeSpan timeout, out Element[] elements, uint threshold = 1)
-  public ElementWaiter FetchWhen(By locator)
-  public ElementWaiter FetchWhen(By locator, TimeSpan timeout)
-  public bool Exists(By locator)
-  public int Count(By locator)
+
+  public bool Exists(By locator, out Element? element)
+  public int AmountOf(By locator)
+
+  public ConditionalFetchContext When(By locator)
 }
 
-public sealed class ElementWaiter
+public sealed class ConditionalFetchContext
 {
-  public ElementWaiter(ElementFactory factory, By locator, TimeSpan timeout)
-  public ElementFactory WrappedFactory { get; }
-  public By Locator { get; }
-  public TimeSpan Timeout { get; }
-  public Element IsDisplayed()
-  public Element IsNotDisplayed()
-  public Element IsNotEnabled()
-  public Element IsEnabled()
-  public Element IsSelected()
-  public Element IsNotSelected()
-  public Element AttributeIsEqualTo(string attributeName, string attributeValue)
-  public Element AttributeStartsWith(string attributeName, string attributeValue)
-  public Element AttributeEndsWith(string attributeName, string attributeValue)
-  public Element AttributeContains(string attributeName, string attributeValue)
-  public Element AttributeHasContent(string attributeName)
-  public Element ContentIsEqualTo(string text)
-  public Element ContentIsNotEqualTo(string text)
-  public Element ContentStartsWith(string text)
-  public Element ContentEndsWith(string text)
-  public Element ContentContains(string text)
-  public Element HasContent()
-  public Element IsClickable()
+  internal ElementWaiter(ElementFactory factory, By locator)
+  FetchContext WrappedFactory { get; }
+  By Locator { get; }
+  TimeSpan Timeout { get; }
+
+  ConditionalFetchContext IsDisplayed()
+  ConditionalFetchContext IsNotDisplayed()
+  ConditionalFetchContext IsNotEnabled()
+  ConditionalFetchContext IsEnabled()
+  ConditionalFetchContext IsSelected()
+  ConditionalFetchContext IsNotSelected()
+  ConditionalFetchContext AttributeIsEqualTo(string attributeName, string attributeValue)
+  ConditionalFetchContext AttributeStartsWith(string attributeName, string attributeValue)
+  ConditionalFetchContext AttributeEndsWith(string attributeName, string attributeValue)
+  ConditionalFetchContext AttributeContains(string attributeName, string attributeValue)
+  ConditionalFetchContext AttributeHasContent(string attributeName)
+  ConditionalFetchContext ContentIsEqualTo(string text)
+  ConditionalFetchContext ContentIsNotEqualTo(string text)
+  ConditionalFetchContext ContentStartsWith(string text)
+  ConditionalFetchContext ContentEndsWith(string text)
+  ConditionalFetchContext ContentContains(string text)
+  ConditionalFetchContext HasContent()
+  ConditionalFetchContext IsClickable()
+  ConditionalFetchContext DoesNotExist()
+
+  Element? Fetch()
+}
+
+public class Element : FetchContext
+{
+  WebElement UnWrap()
+  WebElement WrappedElement { get; private set; }
+  ElementFactory ProducedBy { get; }
+  By RelatedLocator { get; }
+  ISearchContext RelatedContext { get; private set; }
+  bool LocatedAsMultiple { get; }
+  int RetryAttempts { get; private set; } = 50;
+  Guid Identifier { get; }
+
+  public Element Reacquire(bool throwOnError)
+  public Element WithRetryCount(int attempts)
+  public Element Click()
+  public Element ClickUntil(Func<Element, bool> predicate)
+  public Element ScrollIntoView()
+  public Element SendKeystrokes(string keysequence)
+  public Element Clear(bool usingKeystrokes = false)
+
+  public string GetFormControlType()
+  public string GetInnerHTML()
+  public string GetId()
+  public string GetTagName()
+  public string GetInnerText(bool removeAdditionalWhitespace = true)
+  public bool IsDisplayed()
+
+  public FetchContext Within()
+}
+
+public sealed class FormControlAttributes()
+{
+  Dictionary<string, string> GetDataSet()
+
+  string GetAccept()
+  string GetFormaction()
+  string GetFormenctype()
+  string GetFormmethod()
+  string GetName()
+  string GetPattern()
+  string GetPlaceholder()
+  string GetSource()
+  string GetType()
+  string GetValue()
+  string GetList()
+
+  int GetStep()
+  int GetSize()
+  int GetWidth()
+  int GetHeight()
+  int GetMax()
+  int GetMaxlength()
+  int GetMin()
+  int GetMinlength()
+
+  bool IsChecked()
+  bool IsDisabled()
+  bool IsReadonly()
+  bool IsRequired()
+  bool IsMultiple()
+
+  Dictionary<string, string> GetAll()
+  string Get(string name)
 }
 
 public class FormControlElement : Element

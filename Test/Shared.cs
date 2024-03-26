@@ -1,9 +1,9 @@
+using NUnit.Framework;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using NUnit.Framework;
-using OpenQA.Selenium.Chrome;
+using System.Text;
 
 namespace Tests
 {
@@ -61,50 +61,170 @@ namespace Tests
         public const string Context3Div1 = "Context3-Div1-Id";
         public const string Context3Div2 = "Context3-Div2-Id";
         public const string Context3Div3 = "Context3-Div3-Id";
+
+        public const string Context3Span1 = "Context3-Span1";
+        public const string Context3Span2 = "Context3-Span2";
+        public const string Context3Div3Span1 = "Context3-Div3-Span1";
+        public const string Context3Div3Span2 = "Context3-Div3-Span2";
     }
 
-    public static class Shared
+    public sealed class ChromeContext : IDisposable
     {
-        public static DirectoryInfo BrowserDriverFolder { get; set; }
+        public ChromeDriver ChromeDriver { get; }
 
-        public static ChromeDriver SetUpWebdriverAndGoToTestPage()
+        public ChromeContext()
         {
-            var DriverService = ChromeDriverService.CreateDefaultService(BrowserDriverFolder.FullName);
+            var DriverService = ChromeDriverService.CreateDefaultService();
             DriverService.Start();
 
             var Options = new ChromeOptions();
-            Options.AddArguments(new string[] { "--headless=new", "--window-size=2560,1440" });
+            Options.AddArgument("--window-size=2560,1440");
+            //Options.AddArgument("--headless=new");
+            Options.BinaryLocation = @"C:\Temp\Chromium\chrome.exe";
             var Webdriver = new ChromeDriver(DriverService, Options);
             Webdriver.Manage().Window.Maximize();
 
-            string ExecutingLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string? ExecutingLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Debug.Assert(ExecutingLocation is not null);
             string TestPageURL = "file:///" + new FileInfo(ExecutingLocation + @"\TestPage.html").FullName;
 
+            ChromeDriver = Webdriver;
             Webdriver.Navigate().GoToUrl(TestPageURL);
-            return Webdriver;
         }
+
+        #region JS FUNCTIONS
+
+        public void JsCopyLastChildOfParentAndAppend(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            if (timeoutInMS > 0) JsFragments.Append($"arguments[arguments.length - 1]();await Wait({timeoutInMS});");
+
+            JsFragments.Append($"CopyLastChildOfParentAndAppend(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsRemoveLastChildOfParent(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"RemoveLastChildOfParent(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsHideElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"HideElement(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsShowElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"ShowElement(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsEnableElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"Enable(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsDisableElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"Disable(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsSelectElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"Select(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsDeselectElement(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"Deselect(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsChangeElementAttribute(string idOfElement, string attributeName, string attributeValue, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"ChangeAttribute(document.querySelector('#{idOfElement}'), {attributeName}, {attributeValue});");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsChangeElementText(string idOfElement, string text, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"ChangeText(document.querySelector('#{idOfElement}'), {text});");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        #endregion
+
+        #region TEARDOWN
+
+        private bool IsDisposed = false;
+
+        public void Dispose()
+        {
+            if (IsDisposed) return;
+            IsDisposed = true;
+            GC.SuppressFinalize(this);
+            ChromeDriver?.Dispose();
+        }
+
+        ~ChromeContext()
+        {
+            ChromeDriver?.Dispose();
+        }
+
+        #endregion
     }
 }
 
 [SetUpFixture]
 public class GlobalSetup
 {
+    public static TimeSpan DefaultFetchContextTimeout { get; } = TimeSpan.FromSeconds(5.0d);
+
     [OneTimeSetUp]
     public void BeforeAll()
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            Tests.Shared.BrowserDriverFolder = new DirectoryInfo(@"C:\Temp\Webdrivers");
-        }
-        else
-        {
-            Tests.Shared.BrowserDriverFolder = new DirectoryInfo(@"~/Temp/Webdrivers");
-        }
-
-        if (!Tests.Shared.BrowserDriverFolder.Exists)
-            throw new Exception($"Error doing global setup. Webdriver folder does not exist: {Tests.Shared.BrowserDriverFolder.FullName}");
     }
 
     [OneTimeTearDown]

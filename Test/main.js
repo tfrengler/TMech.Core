@@ -32,7 +32,11 @@ const Elements =
     Context2Radio3: () => document.querySelector("#Context2-Radio3-Id"),
     Context3Div1: () => document.querySelector("#Context3-Div1-Id"),
     Context3Div2: () => document.querySelector("#Context3-Div2-Id"),
-    Context3Div3: () => document.querySelector("#Context3-Div3-Id")
+    Context3Div3: () => document.querySelector("#Context3-Div3-Id"),
+    Context3Span1: () => document.querySelector("#Context3-Span1"),
+    Context3Span2: () => document.querySelector("#Context3-Span2"),
+    Context3Div3Span1: () => document.querySelector("#Context3-Div3-Span1"),
+    Context3Div3Span2: () => document.querySelector("#Context3-Div3-Span2"),
 }
 
 window.onload = function()
@@ -56,6 +60,8 @@ const Wait = async function (timeout)
  */
 const CopyLastChildOfParentAndAppend = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
+
     let LastChild = element.children[element.childElementCount-1];
     let NewChild = LastChild.cloneNode(true);
     NewChild.id = NewChild.id + "0";
@@ -68,6 +74,7 @@ const CopyLastChildOfParentAndAppend = async function(element)
  */
 const RemoveLastChildOfParent = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.children[element.childElementCount-1].remove();
 }
 
@@ -77,6 +84,7 @@ const RemoveLastChildOfParent = async function(element)
  */
 const HideElement = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.style.display = "none";
 }
 
@@ -86,6 +94,7 @@ const HideElement = async function(element)
  */
 const ShowElement = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.style.display = "initial";
 }
 
@@ -95,6 +104,7 @@ const ShowElement = async function(element)
  */
 const Enable = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.disabled = false;
 }
 
@@ -104,6 +114,7 @@ const Enable = async function(element)
  */
 const Disable = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.disabled = true;
 }
 
@@ -113,10 +124,14 @@ const Disable = async function(element)
  */
 const Select = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
+
     if (element.tagName == 'OPTION')
         element.selected = true;
     else if (element.tagName == 'INPUT')
         element.checked = true;
+
+    throw new Error("Not a selectable element!");
 }
 
 /**
@@ -125,27 +140,35 @@ const Select = async function(element)
  */
 const Deselect = async function(element)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
+
     if (element.tagName == 'OPTION')
         element.selected = false;
     else if (element.tagName == 'INPUT')
         element.checked = false;
+
+    throw new Error("Not a selectable element!");
 }
 
 /**
  *
  * @param {HTMLElement} element
- * @param {Number} waitTime
+ * @param {string} name
+ * @param {string} value
  */
 const ChangeAttribute = async function(element, name, value)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.setAttribute(name, value);
 }
 
 /**
  *
  * @param {HTMLElement} element
+ * @param {HTMLElement} text
  */
 const ChangeText = async function(element, text)
 {
+    if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.textContent = text;
 }

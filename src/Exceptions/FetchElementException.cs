@@ -4,7 +4,7 @@ using System;
 namespace TMech.Core.Exceptions
 {
     [Serializable]
-    public class FetchElementException : TMechException
+    public class FetchElementException : FetchContextException
     {
         public FetchElementException(By locator, TimeSpan timeout)
             : base($"Failed to fetch element(s) by locator: {locator.Mechanism} - {locator.Criteria} | timeout: {timeout}") { }
@@ -12,5 +12,4 @@ namespace TMech.Core.Exceptions
         public FetchElementException(By locator, TimeSpan timeout, Exception inner)
             : base($"Failed to fetch element(s) by locator: {locator.Mechanism} - {locator.Criteria} | timeout: {timeout}", inner) { }
     }
-
 }

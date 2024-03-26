@@ -1,10 +1,8 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using TMech.Core.Elements.Specialized;
-using TMech.Core.Elements;
-using TMech.Core.Elements.Extensions;
 
+/*
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]
@@ -80,3 +78,4 @@ namespace Tests
         }
     }
 }
+*/

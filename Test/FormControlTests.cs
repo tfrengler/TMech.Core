@@ -1,11 +1,8 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
-using TMech.Core.Elements;
-using TMech.Core.Elements.Extensions;
-using TMech.Core.Elements.Specialized;
 using System.Threading;
-
+/*
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]
@@ -279,3 +276,4 @@ namespace Tests
         #endregion
     }
 }
+*/

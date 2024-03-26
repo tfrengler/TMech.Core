@@ -3,8 +3,8 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
 using System.Diagnostics;
-using TMech.Core.Elements;
 
+/*
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]
@@ -362,3 +362,4 @@ namespace Tests
         }
     }
 }
+*/

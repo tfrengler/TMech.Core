@@ -2,10 +2,8 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
-using TMech.Core.Elements;
-using TMech.Core.Elements.Extensions;
-using TMech.Core.Elements.Specialized;
 
+/*
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]
@@ -119,3 +117,4 @@ namespace Tests
         }
     }
 }
+*/

@@ -4,9 +4,8 @@ using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using TMech.Core.Elements;
-using TMech.Core.Elements.Extensions;
 
+/*
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]
@@ -610,3 +609,4 @@ namespace Tests
         #endregion
     }
 }
+*/

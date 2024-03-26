@@ -4,7 +4,7 @@ using System;
 namespace TMech.Core.Exceptions
 {
     [Serializable]
-    public class ElementWaitException : TMechException
+    public class ElementWaitException : FetchContextException
     {
         public ElementWaitException(string condition, By locator, TimeSpan timeout)
             : base($"Failed to fetch element once {condition}. Locator: {locator.Mechanism} - {locator.Criteria} | timeout: {timeout}") { }

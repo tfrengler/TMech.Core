@@ -9,21 +9,21 @@ using TMech.Core.Exceptions;
 namespace TMech.Core
 {
     /// <summary>
-    /// Represents a context in which elements can be fetched and searched for.
+    /// Represents a context in which elements can be fetched and searched for (a browser, element etc).
     /// </summary>
     public class FetchContext : IFetchContext
     {
-        public static FetchContext Create(ISearchContext context, int pollingInterval = 300)
+        public static FetchContext Create(IWebDriver context, int pollingInterval = 300)
         {
-            return new FetchContext(context, TimeSpan.FromSeconds(5.0d), pollingInterval);
+            return new FetchContext(context, (IJavaScriptExecutor)context, TimeSpan.FromSeconds(5.0d), pollingInterval);
         }
 
-        public static FetchContext Create(ISearchContext context, TimeSpan timeout, int pollingInterval = 300)
+        public static FetchContext Create(IWebDriver context, TimeSpan timeout, int pollingInterval = 300)
         {
-            return new FetchContext(context, timeout, pollingInterval);
+            return new FetchContext(context, (IJavaScriptExecutor)context, timeout, pollingInterval);
         }
         
-        internal FetchContext(ISearchContext context, TimeSpan timeout, int pollingInterval)
+        internal FetchContext(ISearchContext context, IJavaScriptExecutor jsExecutor, TimeSpan timeout, int pollingInterval)
         {
             ArgumentNullException.ThrowIfNull(context, nameof(context));
             if (pollingInterval < 0) throw new ArgumentException($"Argument {nameof(pollingInterval)} must be greater than 0");
@@ -32,13 +32,16 @@ namespace TMech.Core
             PollingInterval = pollingInterval;
             Timeout = timeout;
             SearchContext = context;
+            JsExecutor = jsExecutor;
         }
 
         public int PollingInterval { get; }
         public TimeSpan Timeout { get; }
-        private ISearchContext SearchContext;
         /// <summary>If the context of this instance is an element rather than the browser then this holds a reference to the element-instance it was created by.</summary>
         public IElement? Parent { get; init; }
+        
+        private ISearchContext SearchContext;
+        private readonly IJavaScriptExecutor JsExecutor;
 
         #region FETCH
 
@@ -81,8 +84,6 @@ namespace TMech.Core
             return elements;
         }
 
-        #endregion
-
         /// <summary>
         /// Attempts to fetch an element that matches the passed locator within the timeout this instance of <see cref='IFetchContext'/> is configured with.<br/>
         /// Great for fine grained control (or during development) where you can precisely trial element lookups and inspect/handle WebDriverExceptions.
@@ -90,7 +91,7 @@ namespace TMech.Core
         /// <param name="element">A reference to the element that was found, or null if the timeout was reached.</param>
         /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered. Never null if return value is <see langword="false"/>.</param>
         /// <returns>True if the element was found within the timeout, false otherwise.</returns>
-        public bool TryFetch(By locator, [NotNullWhen(true)] out IElement element, [NotNullWhen(false)] out Exception error)
+        public bool TryFetch(By locator, [NotNullWhen(true)] out IElement? element, [NotNullWhen(false)] out Exception? error)
         {
             var Result = InternalTryFetch(locator, Timeout);
             element = Result.Item2!;
@@ -112,6 +113,8 @@ namespace TMech.Core
             return Result.Item1;
         }
 
+        #endregion
+
         /// <summary>Checks whether an element exists. Will throw an exception if the check could not be completed before the timeout.</summary>
         /// <param name="locator">The locator for the element whose existence you want to check.</param>
         /// <param name="element">If the element exists (true is returned) it will be assigned to this parameter. If the function returns false then this will be <see langword="null"/>.</param>
@@ -132,7 +135,7 @@ namespace TMech.Core
                         return false;
                     }
 
-                    element = new Element((WebElement)SearchResult[0], this, locator, SearchContext, false);
+                    element = new Element((WebElement)SearchResult[0], this, locator, SearchContext, JsExecutor, false);
                     return true;
                 }
                 catch(StaleElementReferenceException)
@@ -170,6 +173,16 @@ namespace TMech.Core
             }
 
             throw new FetchContextException($"Timed out trying find out how many elements exist because the context is stale (timeout: {Timeout})");
+        }
+
+        /// <summary>
+        /// Returns a fetch context that can find elements once they fullfil certain conditions.
+        /// </summary>
+        /// <param name="locator"></param>
+        /// <returns></returns>
+        public ConditionalFetchContext When(By locator)
+        {
+            return new ConditionalFetchContext(SearchContext, this, JsExecutor, locator, Timeout, PollingInterval);
         }
 
         #region PRIVATE
@@ -219,7 +232,7 @@ namespace TMech.Core
                 var ReturnData = new Element[Elements.Count];
                 for (int Index = 0; Index < Elements.Count; Index++)
                 {
-                    ReturnData[Index] = new Element((WebElement)Elements[Index], this, locator, SearchContext, true);
+                    ReturnData[Index] = new Element((WebElement)Elements[Index], this, locator, SearchContext, JsExecutor, true);
                 }
 
                 return new(true, false, ReturnData);
@@ -240,7 +253,7 @@ namespace TMech.Core
                 try
                 {
                     IWebElement Element = SearchContext.FindElement(locator);
-                    return new(true, new Element((WebElement)Element, this, locator, SearchContext, false), null);
+                    return new(true, new Element((WebElement)Element, this, locator, SearchContext, JsExecutor, false), null);
                 }
                 catch (WebDriverException error)
                 {
@@ -257,10 +270,5 @@ namespace TMech.Core
         }
 
         #endregion
-
-        public ConditionalFetchContext When(By locator)
-        {
-            return new ConditionalFetchContext(this, locator);
-        }
     }
 }

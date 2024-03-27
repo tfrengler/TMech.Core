@@ -7,8 +7,7 @@ namespace TMech.Core
     {
         public WebElement WrappedElement { get; }
 
-        public IElement Reacquire(bool throwOnError);
-        public IElement WithRetryCount(int attempts);
+        internal IElement Reacquire(bool throwOnError);
         public IElement Click();
         public IElement ClickUntil(Func<IElement, bool> predicate);
         public IElement ScrollIntoView();

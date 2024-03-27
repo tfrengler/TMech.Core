@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium;
+using System;
 using System.Diagnostics;
 using TMech.Core;
 
@@ -69,5 +70,82 @@ namespace Tests
         }
 
         #endregion
+
+        private const string Category_Fetch = "FetchContext = Fetch";
+        [TestCase(Category = Category_Fetch)]
+        public void Fetch_Success()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver);
+                IElement Result = TestContext.Fetch(By.Id(JSElements.Context1));
+
+                Assert.That(Result, Is.Not.Null);
+            }
+        }
+
+        [TestCase(Category = Category_Fetch)]
+        public void Fetch_Fail()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver);
+                var Timer = Stopwatch.StartNew();
+                Assert.Throws<TMech.Core.Exceptions.FetchElementException>(() => TestContext.Fetch(By.Id("gnargle")));
+                Timer.Stop();
+
+                Assert.That(Timer.Elapsed, Is.GreaterThan(GlobalSetup.DefaultFetchContextTimeout));
+            }
+        }
+
+        [TestCase(Category = Category_Fetch)]
+        public void Fetch_Delayed_Success()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver);
+                Chrome.JsCopyLastChildOfParentAndAppend(JSElements.Context1, 4000);
+
+                var Timer = Stopwatch.StartNew();
+                IElement Result = TestContext.Fetch(By.Id(JSElements.Context1Div3 + '0'));
+                Timer.Stop();
+
+                Assert.That(Result, Is.Not.Null);
+                Assert.That(Timer.Elapsed, Is.GreaterThan(TimeSpan.FromMilliseconds(3800d)));
+            }
+        }
+
+        [TestCase(Category = Category_Fetch)]
+        public void TryFetch_Delayed_Success()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver);
+                Chrome.JsCopyLastChildOfParentAndAppend(JSElements.Context1, 4000);
+
+                var Timer = Stopwatch.StartNew();
+                bool Success = TestContext.TryFetch(By.Id(JSElements.Context1Div3 + '0'), out IElement? element, out Exception? error);
+                Timer.Stop();
+
+                Assert.That(Success, Is.True);
+                Assert.That(element, Is.Not.Null);
+                Assert.That(error, Is.Null);
+                Assert.That(Timer.Elapsed, Is.GreaterThan(TimeSpan.FromMilliseconds(3800d)));
+            }
+        }
+
+        [TestCase(Category = Category_Fetch)]
+        public void TryFetch_Fail()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver);
+                bool Success = TestContext.TryFetch(By.Id("gnargle"), out IElement? element, out Exception? error);
+
+                Assert.That(Success, Is.False);
+                Assert.That(element, Is.Null);
+                Assert.That(error, Is.Not.Null);
+            }
+        }
     }
 }

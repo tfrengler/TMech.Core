@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 
 namespace TMech.Core
 {
-    public sealed class Element : IElement
+    public sealed partial class Element : IElement
     {
-        internal Element(WebElement wrappedElement, IFetchContext producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
+        internal Element(WebElement wrappedElement, IFetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor jsExecutor, bool locatedAsMultiple)
         {
             Debug.Assert(wrappedElement is not null);
             Debug.Assert(producedBy is not null);
@@ -19,7 +19,7 @@ namespace TMech.Core
             RelatedLocator = relatedLocator;
             RelatedContext = relatedContext;
             LocatedAsMultiple = locatedAsMultiple;
-            JavaScriptExecutor = (IJavaScriptExecutor)wrappedElement.WrappedDriver;
+            JavaScriptExecutor = jsExecutor;
             Identifier = Guid.NewGuid();
         }
 
@@ -30,7 +30,6 @@ namespace TMech.Core
         public By RelatedLocator { get; }
         public ISearchContext RelatedContext { get; private set; }
         public bool LocatedAsMultiple { get; }
-        public int RetryAttempts { get; private set; } = 50;
         public Guid Identifier { get; }
 
         /// <summary>
@@ -54,12 +53,6 @@ namespace TMech.Core
                 if (throwOnError) throw;
             }
 
-            return this;
-        }
-
-        public IElement WithRetryCount(int attempts)
-        {
-            RetryAttempts = attempts;
             return this;
         }
 
@@ -158,7 +151,7 @@ namespace TMech.Core
             {
                 string ElementText = WrappedElement.Text.Trim();
                 if (!removeAdditionalWhitespace) return ElementText;
-                return new Regex("[\t\n\v\f\r]").Replace(ElementText, "");
+                return AdditionalWhiteSpaceRegex().Replace(ElementText, "");
             });
 
             return ReturnData ?? string.Empty;
@@ -217,7 +210,7 @@ namespace TMech.Core
         {
             string[]? ReturnData = InternalRetryActionInvoker("Failed to retrieve the css class-attribute", () =>
             {
-                string CssClassAttribute = WrappedElement.GetAttribute("className");
+                string CssClassAttribute = WrappedElement.GetAttribute("className").Trim();
                 return CssClassAttribute.Split(' ', StringSplitOptions.TrimEntries);
             });
 
@@ -248,7 +241,7 @@ namespace TMech.Core
         /// </summary>
         public IFetchContext Within()
         {
-            return new FetchContext(WrappedElement, ProducedBy.Timeout, ProducedBy.PollingInterval)
+            return new FetchContext(WrappedElement, JavaScriptExecutor, ProducedBy.Timeout, ProducedBy.PollingInterval)
             {
                 Parent = this
             };
@@ -257,12 +250,13 @@ namespace TMech.Core
         private TResult? InternalRetryActionInvoker<TResult>(string errorMessage, Func<TResult> action)
         {
             Exception? LatestException = null;
-            int RemainingAttempts = RetryAttempts;
+            var Timeout = ProducedBy.Timeout;
+            int PollingInterval = ProducedBy.PollingInterval;
+            IElement? ParentElement = ProducedBy.Parent;
+            var Timer = Stopwatch.StartNew();
 
-            while (RemainingAttempts > 0)
+            while (Timer.Elapsed <= Timeout)
             {
-                RemainingAttempts--;
-
                 try
                 {
                     return action.Invoke();
@@ -270,23 +264,26 @@ namespace TMech.Core
                 catch (WebDriverException delegateError)
                 {
                     LatestException = delegateError;
-                    System.Threading.Thread.Sleep(ProducedBy.PollingInterval);
+                    System.Threading.Thread.Sleep(PollingInterval);
 
                     // If the error is because the element reference is no longer valid then attempt to reacquire.
                     // If the context is an element try to reacquire that as well.
                     if (delegateError is StaleElementReferenceException)
                     {
-                        if (ProducedBy.Parent is not null)
+                        if (ParentElement is not null)
                         {
-                            RelatedContext = ProducedBy.Parent.Reacquire(false).WrappedElement;
+                            RelatedContext = ParentElement.Reacquire(false).WrappedElement;
                         }
                         Reacquire(false);
                     }
                 }
             }
 
-            string FinalErrorMessage = $"{errorMessage}. Mechanism: {RelatedLocator.Mechanism} | Criteria: {RelatedLocator.Criteria} | From multiple? {LocatedAsMultiple} | Tried {RetryAttempts} time(s).";
+            string FinalErrorMessage = $"{errorMessage}. Mechanism: {RelatedLocator.Mechanism} | Criteria: {RelatedLocator.Criteria} | From multiple? {LocatedAsMultiple} | Timeout: {Timeout}.";
             throw new Exceptions.ElementInteractionException(FinalErrorMessage, LatestException!);
         }
+
+        [GeneratedRegex("[\t\n\v\f\r]")]
+        private static partial Regex AdditionalWhiteSpaceRegex();
     }
 }

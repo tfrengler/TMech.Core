@@ -79,7 +79,7 @@ namespace Tests
 
             var Options = new ChromeOptions();
             Options.AddArgument("--window-size=2560,1440");
-            //Options.AddArgument("--headless=new");
+            Options.AddArgument("--headless=new");
             Options.BinaryLocation = @"C:\Temp\Chromium\chrome.exe";
             var Webdriver = new ChromeDriver(DriverService, Options);
             Webdriver.Manage().Window.Maximize();

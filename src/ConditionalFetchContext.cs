@@ -28,38 +28,41 @@ namespace TMech.Core
         private readonly IJavaScriptExecutor JsExecutor;
         private ISearchContext SearchContext;
 
-        private readonly List<Func<IWebElement,IJavaScriptExecutor,bool>> Constraints;
-        /*
+        private readonly List<Func<ValueTuple<bool,IWebElement?>>> Constraints;
+
         public ConditionalFetchContext IsDisplayed()
         {
-            Constraints.Add(element =>
+            Constraints.Add(() =>
             {
-                return element.Displayed;
+                var Element = SearchContext.FindElement(Locator);
+                return ValueTuple.Create(Element.Displayed, Element);
             });
 
             return this;
         }
-
+        
         public ConditionalFetchContext IsNotDisplayed()
         {
-            Constraints.Add(element =>
+            Constraints.Add(() =>
             {
-                return !element.Displayed;
+                var Element = SearchContext.FindElement(Locator);
+                return ValueTuple.Create(!Element.Displayed, Element);
             });
 
             return this;
         }
-
+        
         public ConditionalFetchContext IsNotEnabled()
         {
-            Constraints.Add(element =>
+            Constraints.Add(() =>
             {
-                return !element.Enabled;
+                var Element = SearchContext.FindElement(Locator);
+                return ValueTuple.Create(!Element.Enabled, Element);
             });
 
             return this;
         }
-
+        /*
         public ConditionalFetchContext IsEnabled()
         {
             Constraints.Add(element =>
@@ -217,9 +220,9 @@ namespace TMech.Core
 
         public ConditionalFetchContext DoesNotExist()
         {
-            Constraints.Add((element,jsExecutor) =>
+            Constraints.Add(() =>
             {
-                return SearchContext.FindElements(Locator).Count == 0;
+                return ValueTuple.Create<bool, IWebElement?>(SearchContext.FindElements(Locator).Count == 0, null);
             });
 
             return this;
@@ -234,18 +237,19 @@ namespace TMech.Core
             {
                 try
                 {
-                    IWebElement Element = SearchContext.FindElement(Locator);
                     bool ConstraintsSatisfied = true;
+                    IWebElement? Element = null;
 
                     for(int Index = 0; Index < Constraints.Count; Index++)
                     {
-                        ConstraintsSatisfied = Constraints[Index](Element, JsExecutor);
+                        (ConstraintsSatisfied, Element) = Constraints[Index]();
                         if (ConstraintsSatisfied == false)
                         {
                             continue;
                         }
                     }
 
+                    if (Element is null) return null;
                     return new Element((WebElement)Element, WrappedContext, Locator, SearchContext, JsExecutor, false);
                 }
                 catch (WebDriverException error)

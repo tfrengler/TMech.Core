@@ -220,6 +220,7 @@ namespace Tests
 public class GlobalSetup
 {
     public static TimeSpan DefaultFetchContextTimeout { get; } = TimeSpan.FromSeconds(5.0d);
+    public static int FetchContextTimeoutMinus1Sec { get; } = 4000;
 
     [OneTimeSetUp]
     public void BeforeAll()

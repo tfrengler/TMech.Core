@@ -13,21 +13,33 @@ namespace TMech.Core
     /// </summary>
     public class FetchContext : IFetchContext
     {
-        public static FetchContext Create(IWebDriver context, int pollingInterval = 300)
+        /// <summary>
+        /// Creates a new fetch context around a webdriver with the standard timeout. The timeout will propagate to any elements fetched within this context.
+        /// </summary>
+        /// <param name="webdriver">The webdriver to wrap the fetch context around.</param>
+        /// <param name="pollingInterval">Optional. The amount of miliseconds to wait between fetching and performing actions on elements.</param>
+        public static FetchContext Create(IWebDriver webdriver, int pollingInterval = 300)
         {
-            return new FetchContext(context, (IJavaScriptExecutor)context, TimeSpan.FromSeconds(5.0d), pollingInterval);
+            return new FetchContext(webdriver, (IJavaScriptExecutor)webdriver, TimeSpan.FromSeconds(5.0d), pollingInterval);
         }
 
-        public static FetchContext Create(IWebDriver context, TimeSpan timeout, int pollingInterval = 300)
+        /// <summary>
+        /// Creates a new fetch context around a webdriver with the given timeout. The timeout will propagate to any elements fetched within this context.
+        /// </summary>
+        /// <param name="webdriver">The webdriver to wrap the fetch context around.</param>
+        /// <param name="timeout">The max amount of time to retry actions on elements before giving up.</param>
+        /// <param name="pollingInterval">Optional. The amount of miliseconds to wait between fetching and performing actions on elements.</param>
+        public static FetchContext Create(IWebDriver webdriver, TimeSpan timeout, int pollingInterval = 300)
         {
-            return new FetchContext(context, (IJavaScriptExecutor)context, timeout, pollingInterval);
+            return new FetchContext(webdriver, (IJavaScriptExecutor)webdriver, timeout, pollingInterval);
         }
         
         internal FetchContext(ISearchContext context, IJavaScriptExecutor jsExecutor, TimeSpan timeout, int pollingInterval)
         {
-            ArgumentNullException.ThrowIfNull(context, nameof(context));
-            if (pollingInterval < 0) throw new ArgumentException($"Argument {nameof(pollingInterval)} must be greater than 0");
-            if (timeout == TimeSpan.Zero) throw new ArgumentException($"Argument {nameof(timeout)} must be greater than 0");
+            Debug.Assert(context is not null, $"Argument {nameof(context)} should not be null");
+            Debug.Assert(jsExecutor is not null, $"Argument {nameof(jsExecutor)} should not be null");
+            Debug.Assert(pollingInterval > 0, $"Argument {nameof(pollingInterval)} must be greater than 0");
+            Debug.Assert(timeout != TimeSpan.Zero, $"Argument {nameof(timeout)} must be greater than 0");
 
             PollingInterval = pollingInterval;
             Timeout = timeout;
@@ -103,7 +115,7 @@ namespace TMech.Core
         /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='IFetchContext'/> is configured with.<br/>
         /// NOTE: If you set <paramref name="threshold"/> to 0 then it effectively becomes a normal "find elements"-call, since it bypasses the retry mechanism, and whatever elements are located (or not) will be returned immediately.
         /// </summary>
-        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null and contains whatever elements were found after <paramref name="threshold"/> was reached or after <see cref="Timeout"/> was reached.</param>
+        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null but will always be empty if the return value was <see langword="false"/>.</param>
         /// <param name="threshold">The amount of elements that must match the locator.</param>
         /// <returns><see langword="true"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="false"/> otherwise.</returns>
         public bool TryFetchAll(By locator, out IElement[] elements, uint threshold = 1)
@@ -118,7 +130,7 @@ namespace TMech.Core
         /// <summary>Checks whether an element exists. Will throw an exception if the check could not be completed before the timeout.</summary>
         /// <param name="locator">The locator for the element whose existence you want to check.</param>
         /// <param name="element">If the element exists (true is returned) it will be assigned to this parameter. If the function returns false then this will be <see langword="null"/>.</param>
-        /// <returns><see langword="True"/> if the element exists, <see langword="False"/> otherwise.</returns>
+        /// <returns><see langword="True"/> if the element exists, <see langword="False"/> otherwise. This can only fail if a parent element is stale.</returns>
         /// <exception cref="FetchContextException"/>
         public bool Exists(By locator, [NotNullWhen(true)] out IElement? element)
         {
@@ -148,10 +160,12 @@ namespace TMech.Core
                 }
             }
 
-            throw new FetchContextException($"Timed out trying find out if element exists because the context is stale (timeout: {Timeout})");
+            throw new FetchContextException($"Timed out trying find out if element exists (timeout: {Timeout})", new ReacquireElementException());
         }
 
-        /// <summary>Returns the amount of elements that match the passed locator.</summary>
+        /// <summary>Checks the amount of elements that match a given locator within this context.</summary>
+        /// <returns>The amount of elements that matches the locator. This can only fail if a parent element is stale.</returns>
+        /// <exception cref="FetchContextException"></exception>
         public int AmountOf(By locator)
         {
             var Timer = Stopwatch.StartNew();
@@ -172,7 +186,7 @@ namespace TMech.Core
                 }
             }
 
-            throw new FetchContextException($"Timed out trying find out how many elements exist because the context is stale (timeout: {Timeout})");
+            throw new FetchContextException($"Timed out trying find out how many elements exist (timeout: {Timeout})", new ReacquireElementException());
         }
 
         /// <summary>
@@ -225,7 +239,7 @@ namespace TMech.Core
 
                 if (threshold > 0 && Elements.Count < threshold)
                 {
-                    Thread.Sleep((int)PollingInterval);
+                    Thread.Sleep(PollingInterval);
                     continue;
                 }
 
@@ -257,6 +271,11 @@ namespace TMech.Core
                 }
                 catch (WebDriverException error)
                 {
+                    if (error is InvalidSelectorException)
+                    {
+                        throw new FetchElementException(locator, timeout, error);
+                    }
+
                     LatestException = error;
                     Thread.Sleep(PollingInterval);
                     if (error is StaleElementReferenceException && Parent is not null)

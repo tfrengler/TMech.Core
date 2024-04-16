@@ -26,7 +26,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Extensions
         /// <exception cref="ElementWaitException"></exception>
         public static Element HasOnClickHandler(this ElementWaiter self, IJavaScriptExecutor jsExecutor)
         {
-            return InternalEventHandlerChecker(self, jsExecutor, "onChange", "it had a ReactJS onClick-handler attached");
+            return InternalEventHandlerChecker(self, jsExecutor, "onClick", "it had a ReactJS onClick-handler attached");
         }
 
         /// <summary>

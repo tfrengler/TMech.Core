@@ -69,10 +69,6 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                     // If the context is an element try to reacquire that as well.
                     if (delegateError is StaleElementReferenceException)
                     {
-                        if (ProducedBy.Parent is not null)
-                        {
-                            RelatedContext = ProducedBy.Parent.Reacquire(false).WrappedElement;
-                        }
                         Reacquire(false);
                     }
                 }
@@ -127,6 +123,10 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
             try
             {
+                if (ProducedBy.Parent is not null)
+                {
+                    RelatedContext = ProducedBy.Parent.Reacquire(false).WrappedElement;
+                }
                 WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
             }
             catch(WebDriverException)

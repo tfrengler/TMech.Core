@@ -235,11 +235,11 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 }
                 catch (StaleElementReferenceException)
                 {
-                    if (Parent is not null)
-                    {
-                        Thread.Sleep((int)PollingInterval);
-                        SearchContext = Parent.Reacquire(false).WrappedElement;
-                    }
+                    Debug.Assert(SearchContext is WebElement);
+                    Debug.Assert(Parent is not null);
+                    
+                    Thread.Sleep((int)PollingInterval);
+                    SearchContext = Parent.Reacquire(false).WrappedElement;
                 }
             }
 
@@ -261,11 +261,11 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 }
                 catch (StaleElementReferenceException)
                 {
-                    if (Parent is not null)
-                    {
-                        Thread.Sleep((int)PollingInterval);
-                        SearchContext = Parent.Reacquire(false).WrappedElement;
-                    }
+                    Debug.Assert(SearchContext is WebElement);
+                    Debug.Assert(Parent is not null);
+
+                    Thread.Sleep((int)PollingInterval);
+                    SearchContext = Parent!.Reacquire(false).WrappedElement;
                 }
             }
 
@@ -301,11 +301,11 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
                     ContextIsStale = true;
 
-                    if (Parent is not null)
-                    {
-                        Thread.Sleep((int)PollingInterval);
-                        SearchContext = Parent.Reacquire(false).WrappedElement;
-                    }
+                    Debug.Assert(SearchContext is WebElement);
+                    Debug.Assert(Parent is not null);
+
+                    Thread.Sleep((int)PollingInterval);
+                    SearchContext = Parent!.Reacquire(false).WrappedElement;
 
                     continue;
                 }
@@ -351,9 +351,12 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
                     LatestException = error;
                     Thread.Sleep((int)PollingInterval);
-                    if (error is StaleElementReferenceException && Parent is not null)
+                    if (error is StaleElementReferenceException)
                     {
-                        SearchContext = Parent.Reacquire(false).WrappedElement;
+                        Debug.Assert(SearchContext is WebElement);
+                        Debug.Assert(Parent is not null);
+
+                        SearchContext = Parent!.Reacquire(false).WrappedElement;
                     }
                 }
             }

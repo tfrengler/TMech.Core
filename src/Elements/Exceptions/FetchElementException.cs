@@ -1,10 +1,10 @@
 using OpenQA.Selenium;
 using System;
 
-namespace TMech.Core.Exceptions
+namespace Gdh.Art.Utils.Webdriver.Elements.Exceptions
 {
     [Serializable]
-    public class FetchElementException : FetchContextException
+    public class FetchElementException : ElementFactoryException
     {
         public FetchElementException(By locator, TimeSpan timeout)
             : base($"Failed to fetch element(s) by locator: {locator.Mechanism} - {locator.Criteria} | timeout: {timeout}") { }

@@ -1,8 +1,8 @@
 ﻿using OpenQA.Selenium;
 using System.IO;
 using System.Threading;
-/*
-namespace TMech.Core.Specialized
+
+namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
 {
     /// <summary>
     /// <para>
@@ -18,12 +18,14 @@ namespace TMech.Core.Specialized
         internal FormControlElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
             : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple) { }
 
+        protected const int RobustWaitTimeInMS = 500;
+
         protected bool RobustSelection = false;
 
         /// <summary>
         /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
         /// </summary>
-        public FormControlElement WithRobustSelection()
+        public virtual FormControlElement WithRobustSelection()
         {
             RobustSelection = true;
             return this;
@@ -42,7 +44,41 @@ namespace TMech.Core.Specialized
                 WrappedElement.SendKeys(input);
                 if (!RobustSelection) return true;
 
-                Thread.Sleep((int)ProducedBy.PollingInterval);
+                Thread.Sleep(RobustWaitTimeInMS);
+                return WrappedElement.GetAttribute("value") == input;
+            });
+        }
+
+        /// <summary>
+        /// <para>Attempts to set data in this formcontrol element by setting <paramref name="input"/> directly in the value-attribute via Javascript.
+        /// After setting the value a change-event will be dispatched to the element to trigger any potential event handlers.</para>
+        /// <para>This can be significantly faster than sending input via keystrokes on large texts, but it completely bypasses potential front-end checks such as ignoring disabled elements. Use with care.</para>
+        /// This will fail with an exception if not an element that accepts key-input (textarea, input-text, -date, -number etc).
+        /// </summary>
+        public void SetValueByJS(string input)
+        {
+            string ValueChangerScript = $@"
+                    arguments[0].blur();
+                    let Prototype = null;
+
+                    if (arguments[0] instanceof HTMLTextAreaElement)
+                        Prototype = window.HTMLTextAreaElement.prototype;
+                    if (arguments[0] instanceof HTMLInputElement)
+                        Prototype = window.HTMLInputElement.prototype;
+                    else
+                        throw new Error('Element is not a textarea or input element: ' + arguments[0].tagName);
+                        
+                    let NativeSetter = Object.getOwnPropertyDescriptor(Prototype, 'value').set;
+                    NativeSetter.call(arguments[0], '{input.Replace("'", "\\'").Trim()}');
+                    arguments[0].dispatchEvent(new Event('change', {{bubbles: true}}));
+                ";
+
+            _ = InternalRetryActionInvoker($"Failed to set value in formcontrol-element via Javascript", () =>
+            {
+                WrappedElement.SendKeys(input);
+                if (!RobustSelection) return true;
+
+                Thread.Sleep(RobustWaitTimeInMS);
                 return WrappedElement.GetAttribute("value") == input;
             });
         }
@@ -247,4 +283,3 @@ namespace TMech.Core.Specialized
         #endregion
     }
 }
-*/

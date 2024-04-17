@@ -1,21 +1,18 @@
 ﻿using OpenQA.Selenium;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
+namespace TMech.Elements.Specialized
 {
     /// <summary>
     /// Represents an input-checkbox or -radio element whose selected-attribute is treated as a boolean value, indicating whether it is checked or not.
     /// </summary>
-    public sealed class BooleanElement : FormControlElement
+    public sealed class InputRadioOrCheckboxElement : FormControlElement
     {
-        internal BooleanElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple)
+        internal InputRadioOrCheckboxElement(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, javaScriptExecutor, locatedAsMultiple)
         {
         }
 
-        /// <summary>
-        /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
-        /// </summary>
-        public override BooleanElement WithRobustSelection()
+        public override InputRadioOrCheckboxElement WithRobustSelection()
         {
             RobustSelection = true;
             return this;

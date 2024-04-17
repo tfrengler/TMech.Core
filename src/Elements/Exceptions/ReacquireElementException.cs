@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Exceptions
+namespace TMech.Elements.Exceptions
 {
     [Serializable]
-    public class ReacquireElementException : ElementFactoryException
+    public class ReacquireElementException : FetchContextException
     {
         public ReacquireElementException()
             : base($"Failed to reacquire handle to the element on staleness") { }

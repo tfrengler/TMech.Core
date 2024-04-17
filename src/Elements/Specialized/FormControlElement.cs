@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
+namespace TMech.Elements.Specialized
 {
     /// <summary>
     /// <para>
@@ -15,15 +15,16 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
     /// </summary>
     public class FormControlElement : Element
     {
-        internal FormControlElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
-            : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple) { }
+        internal FormControlElement(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple)
+            : base(wrappedElement, producedBy, relatedLocator, relatedContext, javaScriptExecutor, locatedAsMultiple) { }
 
         protected const int RobustWaitTimeInMS = 500;
 
         protected bool RobustSelection = false;
 
         /// <summary>
-        /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
+        /// Configure this instance to use robust selection. This means all setters - after changing the value of the element - will wait <see cref="RobustWaitTimeInMS"/> ms and then verify that the value of the element is correct.
+        /// This makes value setting more robust but does cause an overhead, and will slow down execution so use with care.
         /// </summary>
         public virtual FormControlElement WithRobustSelection()
         {
@@ -34,7 +35,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         #region DATA SETTERS
 
         /// <summary>
-        /// Attempts to set data in this formcontrol element by sending <paramref name="input"/> as keystrokes. This will fail with an exception if not an element that accepts key-input (textarea, input-text, -date, -number etc).
+        /// Attempts to set data in this formcontrol element by sending <paramref name="input"/> as keystrokes.
+        /// This will fail with an exception if not an element that accepts key-input (<c>&lt;textarea&gt;</c> or <c>&lt;input&gt;</c>).
         /// </summary>
         public void SetValue(string input, bool clear = true)
         {
@@ -52,8 +54,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         /// <summary>
         /// <para>Attempts to set data in this formcontrol element by setting <paramref name="input"/> directly in the value-attribute via Javascript.
         /// After setting the value a change-event will be dispatched to the element to trigger any potential event handlers.</para>
-        /// <para>This can be significantly faster than sending input via keystrokes on large texts, but it completely bypasses potential front-end checks such as ignoring disabled elements. Use with care.</para>
-        /// This will fail with an exception if not an element that accepts key-input (textarea, input-text, -date, -number etc).
+        /// <para>This can be significantly faster than sending input via keystrokes on large texts, but it may bypass potential front-end checks such as ignoring disabled elements, triggering dialogs, and other things. Use with care.</para>
+        /// This will fail with an exception if not an element that accepts key-input (<c>&lt;textarea&gt;</c> or <c>&lt;input&gt;</c>).
         /// </summary>
         public void SetValueByJS(string input)
         {

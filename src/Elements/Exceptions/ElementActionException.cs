@@ -1,9 +1,9 @@
 using System;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Exceptions
+namespace TMech.Elements.Exceptions
 {
     [Serializable]
-    public class ElementInteractionException : ElementFactoryException
+    public class ElementInteractionException : FetchContextException
     {
         public ElementInteractionException() { }
 

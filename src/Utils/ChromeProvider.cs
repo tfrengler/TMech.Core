@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver
+namespace TMech.Utils
 {
     /// <summary>
     /// <para>Utility that allows you to maintain the latest test version of Chrome in a directory of your choice. This service handles checking versions as well as downloading, and extrating the latest stable release.</para>

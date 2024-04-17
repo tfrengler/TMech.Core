@@ -1,24 +1,20 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
+namespace TMech.Elements.Specialized
 {
     /// <summary>
-    /// Represents a dropdown - &lt;select&gt;-element - that acts as a wrapper around <see cref="SelectElement"/>.
+    /// Represents a dropdown, a &lt;select&gt;-element.
     /// </summary>
-    public sealed class DropdownElement : FormControlElement
+    public sealed class SelectElement : FormControlElement
     {
-        internal DropdownElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple)
+        internal SelectElement(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, javaScriptExecutor, locatedAsMultiple)
         {
         }
 
-        /// <summary>
-        /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
-        /// </summary>
-        public override DropdownElement WithRobustSelection()
+        public override SelectElement WithRobustSelection()
         {
             RobustSelection = true;
             return this;
@@ -28,7 +24,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             return InternalRetryActionInvoker($"Failed to determine if dropdown-element is multiple select", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 return Dropdown.IsMultiple;
             });
         }
@@ -37,7 +33,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             _ = InternalRetryActionInvoker($"Failed to select option by value in dropdown-element (value: {value})", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 Dropdown.SelectByValue(value);
                 if (!RobustSelection) return true;
 
@@ -50,7 +46,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             _ = InternalRetryActionInvoker($"Failed to deselect option by text in dropdown-element (text: {text})", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 Dropdown.DeselectByText(text);
                 if (!RobustSelection) return true;
 
@@ -63,7 +59,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             _ = InternalRetryActionInvoker($"Failed to deselect option by value in dropdown-element (value: {value})", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 Dropdown.DeselectByValue(value);
                 if (!RobustSelection) return true;
 
@@ -76,7 +72,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             _ = InternalRetryActionInvoker($"Failed to select option by text in dropdown-element (text: {text} | partial match? {partialMatch})", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 Dropdown.SelectByText(text, partialMatch);
                 if (!RobustSelection) return true;
 
@@ -89,10 +85,12 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             FormControlElement? ReturnData = InternalRetryActionInvoker("Failed to get selected option from dropdown-element", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 var Element = (WebElement)Dropdown.SelectedOption;
-                var Value = Element.GetAttribute("value");
-                return new FormControlElement(Element, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, false);
+                string? Value = Element.GetAttribute("value");
+                Debug.Assert(Value is not null);
+
+                return new FormControlElement(Element, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, JavaScriptExecutor, false);
             });
 
             Debug.Assert(ReturnData is not null);
@@ -103,14 +101,15 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             IList<FormControlElement>? ReturnData = InternalRetryActionInvoker<IList<FormControlElement>>("Failed to get all selected options from dropdown-element", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 var Elements = Dropdown.AllSelectedOptions;
 
                 var ReturnData = new List<FormControlElement>(Elements.Count);
                 foreach (var CurrentElement in Elements)
                 {
-                    var Value = CurrentElement.GetAttribute("value");
-                    var NewElement = new FormControlElement((WebElement)CurrentElement, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, true);
+                    string? Value = CurrentElement.GetAttribute("value");
+                    Debug.Assert(Value is not null);
+                    var NewElement = new FormControlElement((WebElement)CurrentElement, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, JavaScriptExecutor, true);
                     ReturnData.Add(NewElement);
                 }
 
@@ -125,14 +124,15 @@ namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
         {
             IList<FormControlElement>? ReturnData = InternalRetryActionInvoker<IList<FormControlElement>>("Failed to get options from dropdown-element", () =>
             {
-                var Dropdown = new SelectElement(WrappedElement);
+                var Dropdown = new OpenQA.Selenium.Support.UI.SelectElement(WrappedElement);
                 var Elements = Dropdown.Options;
 
                 var ReturnData = new List<FormControlElement>(Elements.Count);
                 foreach (var CurrentElement in Elements)
                 {
-                    var Value = CurrentElement.GetAttribute("value");
-                    var NewElement = new FormControlElement((WebElement)CurrentElement, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, true);
+                    string? Value = CurrentElement.GetAttribute("value");
+                    Debug.Assert(Value is not null);
+                    var NewElement = new FormControlElement((WebElement)CurrentElement, ProducedBy, By.CssSelector($"option[value='{Value}']"), RelatedContext, JavaScriptExecutor, true);
                     ReturnData.Add(NewElement);
                 }
 

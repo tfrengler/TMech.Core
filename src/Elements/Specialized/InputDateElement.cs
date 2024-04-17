@@ -3,21 +3,18 @@ using System;
 using System.Globalization;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
+namespace TMech.Elements.Specialized
 {
     /// <summary>
     /// Represents an element whose value-attribute is treated as a 'date'. This is meant for an input-element of type 'date', but can also be used by input-text elements that contain date-strings.
     /// </summary>
-    public sealed class DateElement : FormControlElement
+    public sealed class InputDateElement : FormControlElement
     {
-        internal DateElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple)
+        internal InputDateElement(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, javaScriptExecutor, locatedAsMultiple)
         {
         }
 
-        /// <summary>
-        /// Configure this instance to use robust selection, meaning all "setters" will try and ensure that the value/state is what you desire before returning.
-        /// </summary>
-        public override DateElement WithRobustSelection()
+        public override InputDateElement WithRobustSelection()
         {
             RobustSelection = true;
             return this;

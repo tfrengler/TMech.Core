@@ -1,29 +1,31 @@
-using Gdh.Art.Utils.Webdriver.Elements.Exceptions;
 using OpenQA.Selenium;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using TMech.Elements.Exceptions;
 
-namespace Gdh.Art.Utils.Webdriver.Elements
+namespace TMech.Elements
 {
-    /// <summary>Utility-class used to fetch elements conditionally. Is spawned by <see cref='ElementFactory.FetchWhen'/> but can be instantiated manually if desired.<br/>
+    /// <summary>Utility-class used to fetch elements conditionally. Is spawned by <see cref='FetchContext.FetchWhen'/> but can be instantiated manually if desired.<br/>
     /// Uses the factory to fetch elements but only returns them when certain conditions are met. All methods throw an exception upon timeout.
     /// </summary>
-    public sealed class ElementWaiter
+    public sealed class ConditionalFetchContext
     {
-        public ElementWaiter(ElementFactory factory, By locator, TimeSpan timeout)
+        internal ConditionalFetchContext(FetchContext context, IJavaScriptExecutor javaScriptExecutor, By locator, TimeSpan timeout)
         {
-            Debug.Assert(factory is not null);
+            Debug.Assert(context is not null);
             Debug.Assert(locator is not null);
 
-            WrappedFactory = factory;
+            WrappedContext = context;
+            JavaScriptExecutor = javaScriptExecutor;
             Locator = locator;
             Timeout = timeout;
         }
 
-        public ElementFactory WrappedFactory { get; }
+        public FetchContext WrappedContext { get; }
         public By Locator { get; }
         public TimeSpan Timeout { get; }
+        public IJavaScriptExecutor JavaScriptExecutor { get; }
 
         private Element InternalFetchWhen(Func<IWebElement, bool> predicate, string actionDescriptionForTimeout)
         {
@@ -34,19 +36,19 @@ namespace Gdh.Art.Utils.Webdriver.Elements
             {
                 try
                 {
-                    var Element = WrappedFactory.Fetch(Locator, Timeout);
+                    var Element = WrappedContext.Fetch(Locator, Timeout);
                     if (!predicate(Element.UnWrap())) continue;
 
-                    return new Element(Element.UnWrap(), WrappedFactory, Locator, WrappedFactory.SearchContext, false);
+                    return new Element(Element.UnWrap(), WrappedContext, Locator, WrappedContext.SearchContext, JavaScriptExecutor, false);
                 }
                 catch (WebDriverException exception)
                 {
                     Error = exception;
-                    Thread.Sleep((int)WrappedFactory.PollingInterval);
+                    Thread.Sleep((int)WrappedContext.PollingInterval);
                 }
             }
 
-            throw new ElementWaitException(actionDescriptionForTimeout, Locator, Timeout, Error!);
+            throw new ConditionalFetchException(actionDescriptionForTimeout, Locator, Timeout, Error!);
         }
 
         /// <summary>
@@ -117,8 +119,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element AttributeIsEqualTo(string attributeName, string attributeValue)
         {
-            if (attributeName is null) throw new ArgumentNullException(nameof(attributeName));
-            if (attributeValue is null) throw new ArgumentNullException(nameof(attributeValue));
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(attributeValue);
 
             return InternalFetchWhen(element => element.GetAttribute(attributeName) == attributeValue, $"once attribute '{attributeName}' was equal to '{attributeValue}'");
         }
@@ -132,8 +134,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element AttributeStartsWith(string attributeName, string attributeValue)
         {
-            if (attributeName is null) throw new ArgumentNullException(nameof(attributeName));
-            if (attributeValue is null) throw new ArgumentNullException(nameof(attributeValue));
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(attributeValue);
 
             return InternalFetchWhen(element => element.GetAttribute(attributeName).StartsWith(attributeValue), $"once attribute '{attributeName}' started with '{attributeValue}'");
         }
@@ -147,8 +149,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element AttributeEndsWith(string attributeName, string attributeValue)
         {
-            if (attributeName is null) throw new ArgumentNullException(nameof(attributeName));
-            if (attributeValue is null) throw new ArgumentNullException(nameof(attributeValue));
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(attributeValue);
 
             return InternalFetchWhen(element => element.GetAttribute(attributeName).EndsWith(attributeValue), $"once attribute '{attributeName}' ended with '{attributeValue}'");
         }
@@ -162,8 +164,8 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element AttributeContains(string attributeName, string attributeValue)
         {
-            if (attributeName is null) throw new ArgumentNullException(nameof(attributeName));
-            if (attributeValue is null) throw new ArgumentNullException(nameof(attributeValue));
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(attributeValue);
 
             return InternalFetchWhen(element => element.GetAttribute(attributeName).Contains(attributeValue), $"once attribute '{attributeName}' contained '{attributeValue}'");
         }
@@ -176,7 +178,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element AttributeHasContent(string attributeName)
         {
-            if (attributeName is null) throw new ArgumentNullException(nameof(attributeName));
+            ArgumentNullException.ThrowIfNull(attributeName);
 
             return InternalFetchWhen(element => element.GetAttribute(attributeName).Trim().Length > 0, $"once attribute '{attributeName}' had a value");
         }
@@ -189,7 +191,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element ContentIsEqualTo(string text)
         {
-            if (text is null) throw new ArgumentNullException(nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             return InternalFetchWhen(element => element.Text == text, $"once its content was equal to '{text}'");
         }
@@ -202,7 +204,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element ContentIsNotEqualTo(string text)
         {
-            if (text is null) throw new ArgumentNullException(nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             return InternalFetchWhen(element => element.Text != text, $"once its content was not equal to '{text}'");
         }
@@ -215,7 +217,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element ContentStartsWith(string text)
         {
-            if (text is null) throw new ArgumentNullException(nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             return InternalFetchWhen(element => element.Text.StartsWith(text), $"once its content started with '{text}'");
         }
@@ -228,7 +230,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element ContentEndsWith(string text)
         {
-            if (text is null) throw new ArgumentNullException(nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             return InternalFetchWhen(element => element.Text.EndsWith(text), $"once its content ended with '{text}'");
         }
@@ -241,7 +243,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <exception cref="ArgumentNullException"></exception>
         public Element ContentContains(string text)
         {
-            if (text is null) throw new ArgumentNullException(nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             return InternalFetchWhen(element => element.Text.Contains(text), $"once its content contained '{text}'");
         }

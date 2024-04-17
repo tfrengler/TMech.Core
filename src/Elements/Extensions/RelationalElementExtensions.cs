@@ -1,6 +1,6 @@
 ﻿using OpenQA.Selenium;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Extensions
+namespace TMech.Elements.Extensions
 {
     public static class RelationalElementExtensions
     {

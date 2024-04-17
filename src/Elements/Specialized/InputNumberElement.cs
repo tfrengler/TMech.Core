@@ -4,16 +4,16 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Specialized
+namespace TMech.Elements.Specialized
 {
     /// <summary>
     /// Represents an HTML-element whose value-attribute can be treated as a number. These are typically input-elements of type 'number'.
     /// </summary>
-    public sealed class NumberElement : FormControlElement
+    public sealed class InputNumberElement : FormControlElement
     {
-        internal NumberElement(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, locatedAsMultiple) { }
+        internal InputNumberElement(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple) : base(wrappedElement, producedBy, relatedLocator, relatedContext, javaScriptExecutor, locatedAsMultiple) { }
 
-        public override NumberElement WithRobustSelection()
+        public override InputNumberElement WithRobustSelection()
         {
             RobustSelection = true;
             return this;

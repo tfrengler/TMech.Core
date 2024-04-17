@@ -1,6 +1,6 @@
 ﻿using OpenQA.Selenium;
 
-namespace Gdh.Art.Utils.Webdriver.Elements.Utils
+namespace TMech.Utils
 {
     /// <summary>
     /// Contains helper methods for constructing Selenium locators.

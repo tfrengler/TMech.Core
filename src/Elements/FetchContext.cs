@@ -1,48 +1,61 @@
-using Gdh.Art.Utils.Webdriver.Elements.Exceptions;
 using OpenQA.Selenium;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using TMech.Elements.Exceptions;
 
-namespace Gdh.Art.Utils.Webdriver.Elements
+namespace TMech.Elements
 {
     /// <summary>
-    /// <para>A class for fetching HTML-elements within a timeout without throwing exceptions immediately.
+    /// <para>Represents a context (a browser or another element) in which elements can be fetched within a timeout.
     /// Also provides conditional locating strategies (see <see cref="FetchWhen"/>) for fetching elements once they fullfill certain criteria.</para>
     /// <para>Built around the central premise that elements may not always be available the moment you search for them, and that not finding them does not by default constitute an exception.</para>
     /// </summary>
-    public sealed class ElementFactory
+    public sealed class FetchContext
     {
-        public TimeSpan DefaultTimeout { get; } = TimeSpan.FromSeconds(5.0d);
-        public uint PollingInterval { get; set; } = 300;
-        public TimeSpan Timeout { get; }
-        public ISearchContext SearchContext { get; private set; }
+        /// <summary>Creates a new context around a webdriver (browser) using the passed timeout (in seconds).</summary>
+        public static FetchContext Create(IWebDriver webdriver, TimeSpan timeout)
+        {
+            return new FetchContext(webdriver, timeout);
+        }
+
+        /// <summary>Creates a new context around a webdriver (browser) using the default timeout (5 seconds).</summary>
+        public static FetchContext Create(IWebDriver webdriver)
+        {
+            return new FetchContext(webdriver, TimeSpan.FromSeconds(5.0d));
+        }
 
         /// <summary>
-        /// If this instance was not instantiated directly, but rather spawned by a call to <see cref="Element.Within()"/>, then this refers to the <see cref="Element"/>-instance it came from.
+        /// The amount of time (in miliseconds) to wait between fetch attempts and other actions. Is propagated to fetched elements.
+        /// </summary>
+        public uint PollingInterval { get; set; } = 300;
+        public TimeSpan Timeout { get; }
+        /// <summary>
+        /// The Selenium search context that elements are searched for within. When <see cref="Parent"/> is not <c>null</c> then this is a <see cref="WebElement"/>, otherwise an <see cref="IWebDriver"/>.
+        /// </summary>
+        public ISearchContext SearchContext { get; private set; }
+        public IJavaScriptExecutor JavascriptExecutor { get; }
+
+        /// <summary>
+        /// If this instance was spawned by a call to <see cref="Element.Within()"/>, then this refers to the <see cref="Element"/>-instance it came from.
         /// </summary>
         public Element? Parent { get; init; }
 
-        /// <summary>Returns a new instance configured to use a specific context that will be used to search for elements within, using the default timeout.</summary>
-        public ElementFactory(ISearchContext context)
+        internal FetchContext(ISearchContext context, TimeSpan timeout)
         {
-            SearchContext = context ?? throw new ArgumentNullException(nameof(context));
-            Timeout = DefaultTimeout;
-        }
+            ArgumentNullException.ThrowIfNull(context);
 
-        /// <summary>Returns a new instance configured to use a specific context that will be used to search for elements within, using the passed timeout (in seconds).</summary>
-        public ElementFactory(ISearchContext context, TimeSpan timeout)
-        {
-            SearchContext = context ?? throw new ArgumentNullException(nameof(context));
+            SearchContext = context;
             Timeout = timeout;
+            JavascriptExecutor = (IJavaScriptExecutor)context;
         }
 
         #region FETCH
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator and throws an exception if it cannot be found within the timeout this instance of <see cref='ElementFactory'/> is configured with.
+        /// Fetches an element that matches the <paramref name="locator"/> and throws an exception if it cannot be found within the timeout.
         /// </summary>
         /// <returns>The element matching <paramref name='locator'/>. If an exception is thrown, then it will be null.</returns>
         /// <exception cref="FetchElementException"></exception>
@@ -58,7 +71,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         }
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator and throws an exception if it cannot be found within the timeout you pass.
+        /// Fetches an element that matches the <paramref name="locator"/> and throws an exception if it cannot be found within <paramref name="timeout"/>.
         /// </summary>
         /// <returns>The element matching <paramref name='locator'/>. If an exception is thrown, then it will be null.</returns>
         /// <exception cref="FetchElementException"></exception>
@@ -75,11 +88,10 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         }
 
         /// <summary>
-        /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
-        /// Will throw an exception if fewer elements than passed in <paramref name="threshold"/> have been found before the timeout.
+        /// Fetches all elements that match <paramref name="locator"/> within the timeout based on a treshold.
         /// </summary>
-        /// <param name="threshold">The amount of elements that must match the locator before returning.</param>
-        /// <returns>A collection of elements matching the locator at or above the <paramref name="threshold"/>.</returns>
+        /// <param name="threshold">The amount of elements that must match the locator before returning. If fewer elements match the threshold before the timeout an exception will be thrown.</param>
+        /// <returns>A collection of elements matching <paramref name="locator"/> at or above the <paramref name="threshold"/>.</returns>
         /// <exception cref="FetchElementException"></exception>
         public Element[] FetchAll(By locator, uint threshold = 1)
         {
@@ -96,11 +108,10 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         }
 
         /// <summary>
-        /// Attempts to fetch all elements that match the passed locator within the timeout specified.<br/>
-        /// Will throw an exception if fewer elements than passed in <paramref name="threshold"/> have been found before the timeout.
+        /// Fetches all elements that match <paramref name="locator"/> within the <paramref name="timeout"/> based on a treshold.
         /// </summary>
-        /// <param name="threshold">The amount of elements that must match the locator before returning.</param>
-        /// <returns>A collection of elements matching the locator at or above the <paramref name="threshold"/>.</returns>
+        /// <param name="threshold">The amount of elements that must match the locator before returning. If fewer elements match the threshold before the <paramref name="timeout"/> an exception will be thrown.</param>
+        /// <returns>A collection of elements matching <paramref name="locator"/> at or above the <paramref name="threshold"/>.</returns>
         /// <exception cref="FetchElementException"></exception>
         public Element[] FetchAll(By locator, TimeSpan timeout, uint threshold = 1)
         {
@@ -121,13 +132,13 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         #region TRY FETCH
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
-        /// Great for fine grained control (or during development) where you can precisely trial element lookups and inspect/handle WebDriverExceptions.
+        /// Attempts to fetch an element that matches the <paramref name="locator"/> within the timeout.
+        /// Great for fine grained control (during development of debugging) where you can precisely trial element lookups and inspect/handle exceptions.
         /// </summary>
-        /// <param name="element">A reference to the element that was found, or null if the timeout was reached.</param>
-        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered. Never null if return value is <see langword="false"/>.</param>
-        /// <returns>True if the element was found within the timeout, false otherwise.</returns>
-        public bool TryFetch(By locator, [NotNullWhen(true)] out Element element, [NotNullWhen(false)] out Exception error)
+        /// <param name="element">A reference to the element that was found, or <c>null</c> if the timeout was reached.</param>
+        /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or <c>null</c> if no exceptions were encountered. Will never be <c>null</c> if return value is <see langword="false"/>.</param>
+        /// <returns><see langword="True"/> if the element was found within the timeout, <see langword="False"/> otherwise.</returns>
+        public bool TryFetch(By locator, [NotNullWhen(true)] out Element? element, [NotNullWhen(false)] out Exception? error)
         {
             var Result = InternalTryFetch(locator, Timeout);
             element = Result.Item2;
@@ -136,13 +147,13 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         }
 
         /// <summary>
-        /// Attempts to fetch an element that matches the passed locator within the timeout you pass.<br/>
-        /// Great for fine grained control (or during development) where you can precisely trial element lookups and inspect/handle WebDriverExceptions.
+        /// Attempts to fetch an element that matches the <paramref name="locator"/> within the <paramref name="timeout"/>.
+        /// Great for fine grained control (during development of debugging) where you can precisely trial element lookups and inspect/handle exceptions.
         /// </summary>
         /// <param name="element">A reference to the element that was found, or null if the timeout was reached.</param>
         /// <param name="error">A reference to the latest exception that was captured while attempting to locate the element, or null if no exceptions were encountered. Never null if return value is <see langword="false"/>.</param>
-        /// <returns>True if the element was found within the timeout, false otherwise.</returns>
-        public bool TryFetch(By locator, TimeSpan timeout, [NotNullWhen(true)] out Element element, [NotNullWhen(false)] out Exception error)
+        /// <returns><see langword="True"/> if the element was found within the timeout, <see langword="False"/> otherwise.</returns>
+        public bool TryFetch(By locator, TimeSpan timeout, [NotNullWhen(true)] out Element? element, [NotNullWhen(false)] out Exception? error)
         {
             var Result = InternalTryFetch(locator, timeout);
             element = Result.Item2;
@@ -155,12 +166,11 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         #region TRY FETCH ALL
 
         /// <summary>
-        /// Attempts to fetch all elements that match the passed locator within the timeout this instance of <see cref='ElementFactory'/> is configured with.<br/>
-        /// NOTE: If you set <paramref name="threshold"/> to 0 then it effectively becomes a normal "find elements"-call, since it bypasses the retry mechanism, and whatever elements are located (or not) will be returned immediately.
+        /// Attempts to fetch all elements that match the <paramref name="locator"/> within the timeout.
         /// </summary>
-        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null and contains whatever elements were found after <paramref name="threshold"/> was reached or after <see cref="Timeout"/> was reached.</param>
+        /// <param name="elements">A reference to the collection of elements that were found. The collection is never <c>null</c> and contains whatever elements were found after <paramref name="threshold"/> was reached or after <see cref="Timeout"/> was reached.</param>
         /// <param name="threshold">The amount of elements that must match the locator.</param>
-        /// <returns><see langword="true"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="True"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="False"/> otherwise.</returns>
         public bool TryFetchAll(By locator, out Element[] elements, uint threshold = 1)
         {
             var Result = InternalTryFetchAll(locator, Timeout, threshold);
@@ -169,12 +179,11 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         }
 
         /// <summary>
-        /// Attempts to fetch all elements that match the passed locator within the timeout you pass.<br/>
-        /// NOTE: If you set <paramref name="threshold"/> to 0 then it effectively becomes a normal "find elements"-call, since it bypasses the retry mechanism, and whatever elements are located (or not) will be returned immediately.
+        /// Attempts to fetch all elements that match the <paramref name="locator"/> within the <paramref name="timeout"/>.
         /// </summary>
-        /// <param name="elements">A reference to the collection of elements that were found. The collection is never null and contains whatever elements were found after <paramref name="threshold"/> was reached or after <paramref name="timeout"/> was reached.</param>
+        /// <param name="elements">A reference to the collection of elements that were found. The collection is never <c>null</c> and contains whatever elements were found after <paramref name="threshold"/> was reached or after <see cref="Timeout"/> was reached.</param>
         /// <param name="threshold">The amount of elements that must match the locator.</param>
-        /// <returns><see langword="true"/> if the amount of elements found were at or above <paramref name='threshold'/> within the timeout, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="True"/> if the amount of elements found were at or above <paramref name='threshold'/> within the <paramref name="timeout"/>, <see langword="False"/> otherwise.</returns>
         public bool TryFetchAll(By locator, TimeSpan timeout, out Element[] elements, uint threshold = 1)
         {
             var Result = InternalTryFetchAll(locator, timeout, threshold);
@@ -184,27 +193,29 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
         #endregion
 
-        #region TRY FETCH WHEN
+        #region FETCH WHEN
 
         /// <summary>
-        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
+        /// Returns a context in which you can fetch elements by certain conditions.
         /// </summary>
-        public ElementWaiter FetchWhen(By locator)
+        public ConditionalFetchContext FetchWhen(By locator)
         {
-            return new ElementWaiter(this, locator, Timeout);
+            return new ConditionalFetchContext(this, JavascriptExecutor, locator, Timeout);
         }
 
         /// <summary>
-        /// Produces a waiter that is configured to use this <see cref='ElementFactory'/>-instance to find the element matching <paramref name='locator'/> when it reaches certain conditions.
+        /// Returns a context in which you can fetch elements by certain conditions, and a certain <paramref name="timeout"/>.
         /// </summary>
-        public ElementWaiter FetchWhen(By locator, TimeSpan timeout)
+        public ConditionalFetchContext FetchWhen(By locator, TimeSpan timeout)
         {
-            return new ElementWaiter(this, locator, timeout);
+            return new ConditionalFetchContext(this, JavascriptExecutor, locator, timeout);
         }
 
         #endregion
 
-        /// <summary>Checks whether one or more elements exist that match the passed locator.</summary>
+        #region EXISTS AND AMOUNTOF
+
+        /// <summary>Checks whether one or more elements exist that match the <paramref name="locator"/>.</summary>
         public bool Exists(By locator)
         {
             return SearchContext.FindElements(locator).Count > 0;
@@ -230,7 +241,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                         return false;
                     }
 
-                    element = new Element((WebElement)SearchResult[0], this, locator, SearchContext, false);
+                    element = new Element((WebElement)SearchResult[0], this, locator, SearchContext, JavascriptExecutor, false);
                     return true;
                 }
                 catch (StaleElementReferenceException)
@@ -243,12 +254,12 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 }
             }
 
-            throw new ElementFactoryException($"Timed out trying find out if element exists (timeout: {Timeout})", new ReacquireElementException());
+            throw new FetchContextException($"Timed out trying find out if element exists (timeout: {Timeout})", new ReacquireElementException());
         }
 
         /// <summary>Checks the amount of elements that match a given locator within this context.</summary>
         /// <returns>The amount of elements that matches the locator. This can only fail if a parent element is stale.</returns>
-        /// <exception cref="ElementFactoryException"></exception>
+        /// <exception cref="FetchContextException"></exception>
         public int AmountOf(By locator)
         {
             var Timer = Stopwatch.StartNew();
@@ -269,8 +280,10 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 }
             }
 
-            throw new ElementFactoryException($"Timed out trying find out how many elements exist (timeout: {Timeout})", new ReacquireElementException());
+            throw new FetchContextException($"Timed out trying find out how many elements exist (timeout: {Timeout})", new ReacquireElementException());
         }
+
+        #endregion
 
         #region PRIVATE
 
@@ -319,7 +332,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 var ReturnData = new Element[Elements.Count];
                 for (int Index = 0; Index < Elements.Count; Index++)
                 {
-                    ReturnData[Index] = new Element((WebElement)Elements[Index], this, locator, SearchContext, true);
+                    ReturnData[Index] = new Element((WebElement)Elements[Index], this, locator, SearchContext, JavascriptExecutor, true);
                 }
 
                 return new(true, false, ReturnData);
@@ -340,7 +353,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                 try
                 {
                     IWebElement Element = SearchContext.FindElement(locator);
-                    return new(true, new Element((WebElement)Element, this, locator, SearchContext, false), null);
+                    return new(true, new Element((WebElement)Element, this, locator, SearchContext, JavascriptExecutor, false), null);
                 }
                 catch (WebDriverException error)
                 {

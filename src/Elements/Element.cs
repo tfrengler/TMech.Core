@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Gdh.Art.Utils.Webdriver.Elements
+namespace TMech.Elements
 {
     /// <summary><para>
     /// Represents an HTML-element, acting as a wrapper for Selenium's WebElement-instance. Designed for ease of use and stability, with built-in retry mechanisms for all interactions.
@@ -21,7 +21,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
     /// </summary>
     public class Element
     {
-        internal Element(WebElement wrappedElement, ElementFactory producedBy, By relatedLocator, ISearchContext relatedContext, bool locatedAsMultiple)
+        internal Element(WebElement wrappedElement, FetchContext producedBy, By relatedLocator, ISearchContext relatedContext, IJavaScriptExecutor javaScriptExecutor, bool locatedAsMultiple)
         {
             Debug.Assert(wrappedElement is not null);
             Debug.Assert(producedBy is not null);
@@ -33,20 +33,19 @@ namespace Gdh.Art.Utils.Webdriver.Elements
             RelatedLocator = relatedLocator;
             RelatedContext = relatedContext;
             LocatedAsMultiple = locatedAsMultiple;
-            JavaScriptExecutor = (IJavaScriptExecutor)wrappedElement.WrappedDriver;
+            JavaScriptExecutor = javaScriptExecutor;
             Identifier = Guid.NewGuid();
         }
 
         public WebElement WrappedElement { get; private set; }
-        public ElementFactory ProducedBy { get; }
+        public FetchContext ProducedBy { get; }
         public By RelatedLocator { get; }
         public ISearchContext RelatedContext { get; private set; }
         public bool LocatedAsMultiple { get; }
         public Guid Identifier { get; }
+        public IJavaScriptExecutor JavaScriptExecutor { get; }
 
         #region PRIVATE
-
-        protected readonly IJavaScriptExecutor JavaScriptExecutor;
 
         protected TResult? InternalRetryActionInvoker<TResult>(string errorMessage, Func<TResult> action)
         {
@@ -65,8 +64,6 @@ namespace Gdh.Art.Utils.Webdriver.Elements
                     LatestException = delegateError;
                     System.Threading.Thread.Sleep((int)ProducedBy.PollingInterval);
 
-                    // If the error is because the element reference is no longer valid then attempt to reacquire.
-                    // If the context is an element try to reacquire that as well.
                     if (delegateError is StaleElementReferenceException)
                     {
                         Reacquire(false);
@@ -86,7 +83,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
         /// <summary>
         /// Returns a list of all elements in the chain, with the first index being the current instance and the last being the first (top) element in the chain.<br/>
-        /// This is achieved by walking the <see cref="ElementFactory.Parent"/>-tree via <see cref="ProducedBy"/>.
+        /// This is achieved by walking the <see cref="FetchContext.Parent"/>-tree via <see cref="ProducedBy"/>.
         /// </summary>
         /// <returns></returns>
         public IEnumerable<Element> GetElementChain()
@@ -99,7 +96,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
             while (true)
             {
-                ElementFactory CurrentFactory = ThisElement.ProducedBy;
+                FetchContext CurrentFactory = ThisElement.ProducedBy;
                 ThisElement = CurrentFactory.Parent;
                 
                 if (ThisElement is null) break;
@@ -111,7 +108,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
 
         /// <summary>
         /// Attempts to reacquire the underlying <see cref="WebElement"/> this instance is wrapped around. Note that if the <see cref="RelatedContext"/> is another element, and that one is stale, this will fail indefinitely as staleness is not recursively resolved.<br/>
-        /// Note that elements acquired via <see cref="ElementFactory.FetchAll"/> cannot be reacquired.
+        /// Note that elements acquired via <see cref="FetchContext.FetchAll"/> cannot be reacquired.
         /// </summary>
         /// <param name="throwOnError">Whether to throw an exception if the element cannot be reacquired.</param>
         public Element Reacquire(bool throwOnError)
@@ -125,7 +122,7 @@ namespace Gdh.Art.Utils.Webdriver.Elements
             {
                 if (ProducedBy.Parent is not null)
                 {
-                    RelatedContext = ProducedBy.Parent.Reacquire(false).WrappedElement;
+                    RelatedContext = ProducedBy.Parent.Reacquire(true).WrappedElement;
                 }
                 WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
             }
@@ -450,9 +447,9 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <para>Returns a factory that can be used to fetch elements within the context of this element. Uses the timeout of <see cref='ProducedBy'/>.</para>
         /// <para>Do be careful with extensive chaining as resolving staleness cannot be done recursively!</para>
         /// </summary>
-        public ElementFactory Within()
+        public FetchContext Within()
         {
-            return new ElementFactory(WrappedElement, ProducedBy.Timeout)
+            return new FetchContext(WrappedElement, ProducedBy.Timeout)
             {
                 Parent = this
             };
@@ -462,9 +459,9 @@ namespace Gdh.Art.Utils.Webdriver.Elements
         /// <para>Returns a factory that can be used to fetch elements within the context of this element, configured to use the timeout you pass.</para>
         /// <para>Do be careful with extensive chaining as resolving staleness cannot be done recursively!</para>
         /// </summary>
-        public ElementFactory Within(TimeSpan timeout)
+        public FetchContext Within(TimeSpan timeout)
         {
-            return new ElementFactory(WrappedElement, timeout)
+            return new FetchContext(WrappedElement, timeout)
             {
                 Parent = this
             };

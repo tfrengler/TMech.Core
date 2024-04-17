@@ -37,6 +37,11 @@ const Elements =
     Context3Span2: () => document.querySelector("#Context3-Span2"),
     Context3Div3Span1: () => document.querySelector("#Context3-Div3-Span1"),
     Context3Div3Span2: () => document.querySelector("#Context3-Div3-Span2"),
+    StaleContext: () => document.querySelector("#StaleContext"),
+    StaleContextChild1: () => document.querySelector("#StaleChild1"),
+    StaleContextChild2: () => document.querySelector("#StaleChild2"),
+    StaleContextChild3: () => document.querySelector("#StaleChild3"),
+    StaleContextChild4: () => document.querySelector("#StaleChild4"),
 }
 
 window.onload = function()
@@ -171,4 +176,32 @@ const ChangeText = async function(element, text)
 {
     if (!(element instanceof HTMLElement)) throw new Error("Argument 'element' is not an instance of HTMLElement");
     element.textContent = text;
+}
+
+/**
+ * 
+ * @param {Number} timeout 
+ * @param {String} newText 
+ */
+const KillAndReRenderStaleContext = async function (timeout, newText)
+{
+    if ( !(newText && (typeof newText === 'string') && newText.length > 0) )
+    {
+        throw new Error('Argument newText is undefined, not a string or empty');
+    }
+
+    let Timeout = timeout && timeout > 0 ? timeout : 0;
+
+    let StaleContextElement = Elements.StaleContext();
+    StaleContextElement.innerHTML = '';
+
+    if (Timeout) await Wait(timeout);
+    StaleContextElement.innerHTML = `
+        <div id="StaleChild1">
+            <ul id="StaleChild2">
+                <li id="StaleChild3">
+                    <span id="StaleChild4">${newText}</span>
+                </li>
+            </ul>
+        </div>`;
 }

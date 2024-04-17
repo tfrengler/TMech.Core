@@ -66,6 +66,12 @@ namespace Tests
         public const string Context3Span2 = "Context3-Span2";
         public const string Context3Div3Span1 = "Context3-Div3-Span1";
         public const string Context3Div3Span2 = "Context3-Div3-Span2";
+
+        public const string StaleContext = "StaleContext";
+        public const string StaleContextChild1 = "StaleChild1";
+        public const string StaleContextChild2 = "StaleChild2";
+        public const string StaleContextChild3 = "StaleChild3";
+        public const string StaleContextChild4 = "StaleChild4";
     }
 
     public sealed class ChromeContext : IDisposable
@@ -179,7 +185,7 @@ namespace Tests
             JsFragments.Append($"arguments[arguments.length - 1]();");
             if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
 
-            JsFragments.Append($"ChangeAttribute(document.querySelector('#{idOfElement}'), {attributeName}, {attributeValue});");
+            JsFragments.Append($"ChangeAttribute(document.querySelector('#{idOfElement}'), '{attributeName}', '{attributeValue}');");
             ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
         }
 
@@ -189,8 +195,14 @@ namespace Tests
             JsFragments.Append($"arguments[arguments.length - 1]();");
             if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
 
-            JsFragments.Append($"ChangeText(document.querySelector('#{idOfElement}'), {text});");
+            JsFragments.Append($"ChangeText(document.querySelector('#{idOfElement}'), '{text}');");
             ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
+        public void JsKillAndReRenderStaleContext(int timeoutInMS, string newText)
+        {
+            string Script = $"arguments[arguments.length - 1]();KillAndReRenderStaleContext({timeoutInMS}, '{newText}');";
+            ChromeDriver.ExecuteAsyncScript(Script);
         }
 
         #endregion

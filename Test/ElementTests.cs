@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using TMech.Elements;
 using TMech.Elements.Exceptions;
 
-
 namespace Tests
 {
     [Parallelizable(ParallelScope.Children)]

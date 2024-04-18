@@ -15,8 +15,8 @@ using System.Threading;
 namespace TMech.Utils
 {
     /// <summary>
-    /// <para>Utility that allows you to maintain the latest test version of Chrome in a directory of your choice. This service handles checking versions as well as downloading, and extrating the latest stable release.</para>
-    /// <para>To learn more about Chrome for automation testing see here: https://googlechromelabs.github.io/chrome-for-testing/</para>
+    /// <para>Utility that allows you to maintain the latest version of <b>Chrome for Testing</b> in a directory of your choice. This service handles checking versions as well as downloading, and extracting the latest stable release.</para>
+    /// <para>To learn more about Chrome for automation testing see <see href="https://googlechromelabs.github.io/chrome-for-testing/">here</see>.</para>
     /// </summary>
     public sealed class ChromeProvider : IDisposable
     {

@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using OpenQA.Selenium.DevTools.V121.WebAuthn;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -160,6 +161,8 @@ namespace TMech.Elements
         /// <param name="predicate">A predicate that decides when the click has succeeded. Receives a reference to the clicked element, and is expected to return a boolean where true indicates success.</param>
         public Element ClickUntil(Func<Element, bool> predicate)
         {
+            ArgumentNullException.ThrowIfNull(predicate);
+
             _ = InternalRetryActionInvoker("Failed to click element until condition was met", () =>
             {
                 WrappedElement.Click();
@@ -177,7 +180,7 @@ namespace TMech.Elements
         {
             _ = InternalRetryActionInvoker("Failed to scroll element into view", () =>
             {
-                JavaScriptExecutor.ExecuteScript("arguments[0].scrollIntoView({ behavior: \"instant\", block: \"center\", inline: \"center\" });", new object[] { WrappedElement });
+                JavaScriptExecutor.ExecuteScript("arguments[0].scrollIntoView({ behavior: \"instant\", block: \"center\", inline: \"center\" });", WrappedElement);
                 return true;
             });
 
@@ -185,16 +188,14 @@ namespace TMech.Elements
         }
 
         /// <summary>
-        /// Attempts to send input to the element. This will fail if the element is not a type that accepts input (textarea, input etc).
-        /// If <paramref name="input"/> is null, empty or whitespace then nothing will be sent to the element (except clearing it if <paramref name="clear"/> is <see langword="true"/>).
+        /// Attempts to send input to the element as keystrokes, simulating typing. This will fail if the element is not a type that accepts input (<c>&lt;textarea&gt;</c> or <c>&lt;input&gt;</c>), is not displayed or is displayed.
+        /// If <paramref name="input"/> is null, empty or whitespace then nothing will be sent to the element.
         /// </summary>
-        /// <param name="clear">Whether to clear the value in the element first. If <see langword="false"/> then the <paramref name="input"/> is appended instead.</param>
-        public Element SendKeys(string input, bool clear = true)
+        public Element SendKeys(string input)
         {
             string InputForErrorMessage = input.Length > 64 ? $"{input[..64]}... TRUNCATED ({input.Length})" : input;
-            _ = InternalRetryActionInvoker($"Failed to send keys to element (clear? {clear}): {InputForErrorMessage}", () =>
+            _ = InternalRetryActionInvoker($"Failed to send keys to element: {InputForErrorMessage}", () =>
             {
-                if (clear) WrappedElement.Clear();
                 if (string.IsNullOrWhiteSpace(input)) return true;
 
                 WrappedElement.SendKeys(input);
@@ -205,9 +206,9 @@ namespace TMech.Elements
         }
 
         /// <summary>
-        /// Attempts to clear the element's value. This will fail if the element is not a type that accepts input (textarea, input etc). Note that input type='file' will also fail!
+        /// Attempts to clear the element's text. This will fail if the element is not a type that accepts input (<c>&lt;textarea&gt;</c> or <c>&lt;input&gt;</c>). Note that attempting to clear an <c>&lt;input type='file'&gt;</c> will throw an exception.
         /// </summary>
-        /// <param name="usingKeystrokes">If <see langword="false"/> it will use Selenium's standard method. If <see langword="true"/> then it will be done by using key input (Ctrl + 'a', then 'delete').</param>
+        /// <param name="usingKeystrokes">If <see langword="False"/> it will use Selenium's standard method. If <see langword="True"/> then it will be done by using key input (<c>Ctrl + a</c>, then <c>Delete</c>).</param>
         public Element Clear(bool usingKeystrokes = false)
         {
             _ = InternalRetryActionInvoker("Failed to clear element", () =>
@@ -233,15 +234,21 @@ namespace TMech.Elements
         /// <summary>
         /// Returns the name of the form control this element represents. Form control elements are:<br/>
         /// <list type='bullet'>
-        /// <item>a</item>
-        /// <item>button</item>
-        /// <item>fieldset</item>
-        /// <item>input</item>
-        /// <item>select</item>
-        /// <item>textarea</item>
+        /// <item><c>&lt;a&gt;</c></item>
+        /// <item><c>&lt;button&gt;</c></item>
+        /// <item><c>&lt;fieldset&gt;</c></item>
+        /// <item><c>&lt;input&gt;</c></item>
+        /// <item><c>&lt;select&gt;</c></item>
+        /// <item><c>&lt;textarea&gt;</c></item>
+        /// <item><c>&lt;label&gt;</c></item>
+        /// <item><c>&lt;legend&gt;</c></item>
+        /// <item><c>&lt;datalist&gt;</c></item>
+        /// <item><c>&lt;output&gt;</c></item>
+        /// <item><c>&lt;option&gt;</c></item>
+        /// <item><c>&lt;optgroup&gt;</c></item>
         /// </list>
         /// </summary>
-        /// <returns>The name of the element if it's a form control element. For input-elements the type-name is returned as well (input:text, input:file etc). Returns empty string otherwise.</returns>
+        /// <returns>The name of the element if it's a form control element, <see cref="string.Empty"/> otherwise. For input-elements the type-name is returned as well (<c>input:text</c>, <c>input:file</c> etc).</returns>
         public string GetFormControlType()
         {
             string? ReturnData = InternalRetryActionInvoker(
@@ -257,7 +264,7 @@ namespace TMech.Elements
                         case "select":
                         case "textarea":
                         case "label":
-                        case "legeld":
+                        case "legend":
                         case "datalist":
                         case "output":
                         case "option":
@@ -271,28 +278,41 @@ namespace TMech.Elements
                     }
                 }
             );
+
             return ReturnData ?? string.Empty;
         }
 
         /// <summary>
         /// Retrieves a list of the names of all the attributes (standard, dataset and non-standard).
+        /// Only returns declared attributes in the HTML markup of the page, and not in the properties of the element as found when accessing the element's properties via JavaScript.
         /// </summary>
-        public ImmutableList<string> GetAttributeNames()
+        public IList<string> GetAttributeNames()
         {
-            ReadOnlyCollection<object>? ReturnData = InternalRetryActionInvoker("Failed to retrieve attribute names", () =>
+            ReadOnlyCollection<object>? Result = InternalRetryActionInvoker("Failed to retrieve attribute names", () =>
             {
-                ReadOnlyCollection<object>? AttributeArray = JavaScriptExecutor.ExecuteScript("return arguments[0].getAttributeNames();", new object[] { WrappedElement }) as ReadOnlyCollection<object>;
-                return AttributeArray ?? new ReadOnlyCollection<object>(Array.Empty<string>());
+                ReadOnlyCollection<object>? AttributeArray = (ReadOnlyCollection<object>)JavaScriptExecutor.ExecuteScript("return arguments[0].getAttributeNames();", WrappedElement);
+                return AttributeArray;
             });
 
-            Debug.Assert(ReturnData is not null, "ReturnData from script should never be null, at worst it should be an empty array");
-            return ReturnData.Select(attributeName => (string)attributeName).ToImmutableList();
+            if (Result is null) return Array.Empty<string>();
+
+            var ReturnData = new string[Result.Count];
+            int Index = 0;
+
+            foreach(object CurrentAttributeName in Result)
+            {
+                ReturnData[Index] = (string)CurrentAttributeName;
+                Index++;
+            }
+
+            return ReturnData;
         }
 
         /// <summary>
-        /// Retrieves a list of all the attributes (standard, dataset and non-standard) and their values.
+        /// Retrieves a list of all the attributes (standard, dataset and non-standard) and their values, trimmed of leading and trailing whitespace.
+        /// Only returns declared attributes in the HTML markup of the page, and not in the properties of the element as found when accessing the element's properties via JavaScript.
         /// </summary>
-        public ImmutableDictionary<string, string> GetAttributes()
+        public IDictionary<string, string> GetAttributes()
         {
             Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker(
                 "Failed to retrieve attributes and their values",
@@ -301,28 +321,28 @@ namespace TMech.Elements
                     string Script = @"
                         let ReturnData = {};
                         const AttributeNames = arguments[0].getAttributeNames();
-                        AttributeNames.forEach(name=> ReturnData[name] = arguments[0].getAttribute(name));
+                        AttributeNames.forEach(name=> ReturnData[name] = arguments[0].getAttribute(name).trim());
                         return ReturnData;
                     ";
-                    return (Dictionary<string, object>)JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement });
+                    return (Dictionary<string, object>)JavaScriptExecutor.ExecuteScript(Script, WrappedElement);
                 }
             );
 
-            if (ScriptReturnData is null) return ImmutableDictionary.Create<string, string>();
+            Debug.Assert(ScriptReturnData is not null);
 
-            var ReturnData = ImmutableDictionary.CreateBuilder<string, string>();
+            var ReturnData = new Dictionary<string, string>(ScriptReturnData.Count);
             foreach (KeyValuePair<string, object> Current in ScriptReturnData)
             {
                 ReturnData.Add(Current.Key, (string)Current.Value);
             }
 
-            return ReturnData.ToImmutable();
+            return ReturnData;
         }
 
         /// <summary>
-        /// Retrieves a list of all custom data-attributes and their values.
+        /// Retrieves a list of all custom data-attributes and their values, trimmed of leading and trailing whitespace.
         /// </summary>
-        public ImmutableDictionary<string, string> GetDataSet()
+        public IDictionary<string, string> GetDataSet()
         {
             Dictionary<string, object>? ScriptReturnData = InternalRetryActionInvoker(
                 "Failed to retrieve dataset-attrbute values",
@@ -331,22 +351,24 @@ namespace TMech.Elements
                     string Script = @"
                         let ReturnData = {};
                         for(let Key in arguments[0].dataset)
-                            ReturnData[Key] = arguments[0].dataset[Key];
+                        {
+                            ReturnData[Key] = arguments[0].dataset[Key].trim();
+                        }
                         return ReturnData;
                     ";
-                    return JavaScriptExecutor.ExecuteScript(Script, new object[] { WrappedElement }) as Dictionary<string, object>;
+                    return (Dictionary<string, object>)JavaScriptExecutor.ExecuteScript(Script, WrappedElement);
                 }
             );
 
-            if (ScriptReturnData is null) return ImmutableDictionary.Create<string, string>();
+            Debug.Assert(ScriptReturnData is not null);
 
-            var ReturnData = ImmutableDictionary.CreateBuilder<string, string>();
+            var ReturnData = new Dictionary<string, string>(ScriptReturnData.Count);
             foreach (KeyValuePair<string, object> Current in ScriptReturnData)
             {
                 ReturnData.Add(Current.Key, (string)Current.Value);
             }
 
-            return ReturnData.ToImmutable();
+            return ReturnData;
         }
 
         /// <summary>
@@ -356,14 +378,14 @@ namespace TMech.Elements
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner, nested HTML", () =>
             {
-                return (string)JavaScriptExecutor.ExecuteScript("return arguments[0].innerHTML;", new object[] { WrappedElement });
+                return (string)JavaScriptExecutor.ExecuteScript("return arguments[0].innerHTML.trim();", WrappedElement);
             });
 
-            return ReturnData?.Trim() ?? string.Empty;
+            return ReturnData ?? string.Empty;
         }
 
         /// <summary>
-        /// Returns the id of the element, as defined by its id-attribute.
+        /// Returns the id of the element, as defined by its <c>id</c>-attribute.
         /// </summary>
         public string GetId()
         {
@@ -376,7 +398,7 @@ namespace TMech.Elements
         }
 
         /// <summary>
-        /// Returns the name of the HTML-tag this element represents, in lower-case.
+        /// Returns the name of the HTML-tag this element represents, in lower-case. For example for element <c>&lt;input name='foo'&gt;</c> would return <c>input</c>.
         /// </summary>
         public string GetTagName()
         {
@@ -389,26 +411,29 @@ namespace TMech.Elements
         }
 
         /// <summary>
-        /// Retrieves the text-content of the element, with leading and trailing whitespace removed. Never returns null.
+        /// Retrieves the text-content of the element, with leading and trailing whitespace removed. Successive whitespace is reduced to one, and linebreaks are replaced with one space.
         /// </summary>
-        /// <param name="removeAdditionalWhitespace">Whether to remove additional whitespace aside from leading and trailing, such as newlines, tabs, linefeeds etc. Optional, defaults to true.</param>
-        public string GetText(bool removeAdditionalWhitespace = true)
+        /// <returns>The text value of the element, or <see cref="string.Empty"/></returns>
+        public string GetText()
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the inner text value", () =>
             {
-                string ElementText = WrappedElement.Text.Trim();
-                if (!removeAdditionalWhitespace) return ElementText;
-                return new Regex("[\t\n\v\f\r]").Replace(ElementText, "");
+                return WrappedElement.Text;
             });
-
-            return ReturnData ?? string.Empty;
+            
+            ReturnData ??= string.Empty;
+            ReturnData = new Regex("\n").Replace(ReturnData, " ").Trim();
+            return new Regex("\\s{2,}").Replace(ReturnData, " ").Trim();
         }
 
         /// <summary>
-        /// Returns the value of a given attribute.
+        /// Returns the value of a given attribute. Returns both declared attributes in the HTML markup of the page, as well as in the properties of the element as found when accessing the element's properties via JavaScript.
         /// </summary>
+        /// <returns>The text value of the element, or <see cref="string.Empty"/> if the attribute does not exist or its value is not set.</returns>
         public string GetAttribute(string attributeName)
         {
+            ArgumentNullException.ThrowIfNull(attributeName);
+
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value for attribute with name: " + attributeName, () =>
             {
                 return WrappedElement.GetAttribute(attributeName);
@@ -449,7 +474,7 @@ namespace TMech.Elements
         /// </summary>
         public FetchContext Within()
         {
-            return new FetchContext(WrappedElement, ProducedBy.Timeout)
+            return new FetchContext(WrappedElement, JavaScriptExecutor, ProducedBy.Timeout)
             {
                 Parent = this
             };
@@ -461,7 +486,7 @@ namespace TMech.Elements
         /// </summary>
         public FetchContext Within(TimeSpan timeout)
         {
-            return new FetchContext(WrappedElement, timeout)
+            return new FetchContext(WrappedElement, JavaScriptExecutor, timeout)
             {
                 Parent = this
             };

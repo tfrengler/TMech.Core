@@ -86,7 +86,7 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Attemps to upload a file to the formcontrol element. Will fail if the element is not input[type='file'] or <paramref name="input"/> does not exists.
+        /// Attemps to upload a local file to the formcontrol element. Will fail if the element is not <c>&lt;input type='file'&gt;</c> or <paramref name="input"/> does not exists.
         /// </summary>
         /// <param name="input">The full, absolute path of the file you wish to upload including file extension.</param>
         public void UploadFile(string input)
@@ -96,7 +96,7 @@ namespace TMech.Elements.Specialized
                 throw new FileNotFoundException("Unable to upload file to form control element as file cannot be found", input);
             }
 
-            SendKeys(input, false);
+            SendKeys(input);
         }
 
         #endregion

@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Tests
 {
@@ -35,7 +36,7 @@ namespace Tests
         public const string Context2DateTimeWrapper = "Context2-DateTime-Wrapper";
         public const string Context2DateTimeLocalWrapper = "Context2-DateTimeLocal-Wrapper";
 
-        public const string Context2Dropdown = "Context2-Select";
+        public const string Context2DropdownContainer = "Context2-Select";
         public const string Context2Select = "Context2-Select-Id";
         public const string Context2OptionNIL1 = "Context2-Option-NIL1";
         public const string Context2Option1 = "Context2-Option1-Id";
@@ -80,7 +81,7 @@ namespace Tests
 
         public ChromeContext()
         {
-            var DriverService = ChromeDriverService.CreateDefaultService();
+            var DriverService = ChromeDriverService.CreateDefaultService(@"C:\Temp\Chromium\chromedriver.exe");
             DriverService.Start();
 
             var Options = new ChromeOptions();
@@ -88,6 +89,7 @@ namespace Tests
             Options.AddArgument("--headless=new");
             Options.BinaryLocation = @"C:\Temp\Chromium\chrome.exe";
             var Webdriver = new ChromeDriver(DriverService, Options);
+            Thread.Sleep(1000);
             Webdriver.Manage().Window.Maximize();
 
             string? ExecutingLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);

@@ -43,13 +43,23 @@ namespace TMech.Elements
         /// </summary>
         public Element? Parent { get; init; }
 
-        internal FetchContext(ISearchContext context, TimeSpan timeout)
+        internal FetchContext(IWebDriver webdriver, TimeSpan timeout)
+        {
+            ArgumentNullException.ThrowIfNull(webdriver);
+
+            SearchContext = webdriver;
+            Timeout = timeout;
+            JavascriptExecutor = (IJavaScriptExecutor)webdriver;
+        }
+
+        internal FetchContext(ISearchContext context, IJavaScriptExecutor javaScriptExecutor, TimeSpan timeout)
         {
             ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(javaScriptExecutor);
 
             SearchContext = context;
             Timeout = timeout;
-            JavascriptExecutor = (IJavaScriptExecutor)context;
+            JavascriptExecutor = javaScriptExecutor;
         }
 
         #region FETCH

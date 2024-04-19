@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.IO;
 using TMech.Utils;
@@ -9,43 +10,87 @@ namespace Tests
     [TestFixture]
     public class WebdriverContextTests
     {
-        private Uri RemoteUri = new Uri("http://192.168.178.85:4444");
-        private DirectoryInfo DownloadsFolder = new System.IO.DirectoryInfo("C:/Temp");
+        private readonly Uri RemoteUri = new Uri("http://192.168.178.85:4444");
+        private readonly DirectoryInfo DownloadsFolder = new System.IO.DirectoryInfo("C:/Temp");
         private System.Drawing.Size WindowSize = new System.Drawing.Size(1024, 768);
 
-        #region REMOTE
+        // Remote, default settings, use Chrome
+        // Local with driver, no binary, use Chrome
+        // Local with browser, with binary, use Chrome
+        // Local with browser, without binary, use Chrome
+        // Remote, custom settings, use Chrome
+        // Local with browser, without binary, custom settings use Chrome
 
-        private const string Category_Remote = "WebdriverContext = Remote";
-        [TestCase(Category = Category_Remote)]
-        public void Remote_Chrome_CustomSettings()
+        // Local with browser, no binary - CHROME
+        // Local with browser, no binary - FIREFOX
+        // Local with browser, no binary - EDGE
+        // Fail when interacting with webdriver before initialization
+
+        private const string Category = "WebdriverContext";
+        [TestCase(Category = Category)]
+        public void Remote_DefaultInitialize()
         {
-            var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
+            using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
+            Context.Initialize(true);
+        }
+
+        [TestCase(Category = Category)]
+        public void Remote_CustomInitialize()
+        {
+            using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
             Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, DownloadsFolder);
-            Context?.Dispose();
         }
 
-        [TestCase(Category = Category_Remote)]
-        public void Remote_Chrome_DefaultSettings()
+        [TestCase(Category = Category)]
+        public void Local_WithDriver_NoBinary_DefaultInitialize()
         {
-            var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
+            var DriverService = ChromeDriverService.CreateDefaultService();
+            using var Context = WebdriverContext.CreateLocal(DriverService);
             Context.Initialize(true);
-            Context?.Dispose();
         }
 
-        [TestCase(Category = Category_Remote)]
-        public void Remote_Firefox_CustomSettings()
+        [TestCase(Category = Category)]
+        public void Local_WithBrowser_AndBinary_DefaultInitialize()
         {
-            var Context = WebdriverContext.CreateRemote(TMech.Browser.FIREFOX, RemoteUri);
-            Context.Initialize(true, WindowSize, new string[] { "-private-window" }, DownloadsFolder);
-            Context?.Dispose();
-        }
-
-        [TestCase(Category = Category_Remote)]
-        public void Remote_Firefox_DefaultSettings()
-        {
-            var Context = WebdriverContext.CreateRemote(TMech.Browser.FIREFOX, RemoteUri);
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.CHROME, GlobalSetup.ChromeLocation);
             Context.Initialize(true);
-            Context?.Dispose();
+        }
+
+        [TestCase(Category = Category)]
+        public void Local_WithBrowser_NoBinary_CustomInitialize()
+        {
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.CHROME);
+            Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, DownloadsFolder);
+        }
+
+        [TestCase(Category = Category)]
+        public void Failure_Usage_Before_Initialization()
+        {
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.CHROME);
+            Assert.Throws<InvalidOperationException>(() => _ = Context.Webdriver);
+        }
+
+        #region BROWSER SPECIFIC
+
+        [TestCase(Category = Category)]
+        public void Local_Chrome_DefaultInitialize()
+        {
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.CHROME);
+            Context.Initialize(true);
+        }
+
+        [TestCase(Category = Category)]
+        public void Local_Firefox_DefaultInitialize()
+        {
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.FIREFOX);
+            Context.Initialize(true);
+        }
+
+        [TestCase(Category = Category)]
+        public void Local_Edge_DefaultInitialize()
+        {
+            using var Context = WebdriverContext.CreateLocal(TMech.Browser.EDGE);
+            Context.Initialize(true);
         }
 
         #endregion

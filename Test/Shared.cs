@@ -235,6 +235,8 @@ public class GlobalSetup
 {
     public static TimeSpan DefaultFetchContextTimeout { get; } = TimeSpan.FromSeconds(5.0d);
     public static int FetchContextTimeoutMinus1Sec { get; } = 4000;
+    public static FileInfo ChromeLocation = new FileInfo(@"C:\Temp\Chromium\chrome.exe");
+    public static FileInfo ChromeDriverLocation = new FileInfo(@"C:\Temp\Chromium\chromedriver.exe");
 
     [OneTimeSetUp]
     public void BeforeAll()

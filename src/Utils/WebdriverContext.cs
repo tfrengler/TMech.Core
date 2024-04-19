@@ -53,7 +53,7 @@ namespace TMech.Utils
         public static WebdriverContext CreateLocal(Browser browser, FileInfo? browserBinaryLocation = null)
         {
             Trace.TraceInformation("WebdriverContext: Creating a local webdriver context using a default driver service ({0})", browser);
-            
+
             DriverService Service = browser switch
             {
                 Browser.CHROME => ChromeDriverService.CreateDefaultService(),
@@ -66,12 +66,20 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// Initializes the webdriver, which should start the browser driver and browser. The <see cref="Webdriver"/> should be populated and ready for interaction once this method returns.
+        /// Initializes the webdriver, which should start the browser driver and the browser itself. The <see cref="Webdriver"/> should be populated and ready for interaction once this method returns.
+        /// Browser options are automatically configured with what is considered sensible defaults:
+        /// <list type="bullet">
+        ///     <item>Downloads are automatic, meaning no pop-up dialog asking if or where you want to download a file.</item>
+        ///     <item>Firefox uses a new temporary, discardable profile that is automatically deleted after the browser is shut down (Chrome and Edge does this automatically).</item>
+        ///     <item>The timeout for loading a webpage is set to <c>30</c> seconds. This can be changed later via <c>Webdriver.Manage().Timeouts().PageLoad</c></item>
+        ///     <item>Proxy autodetect is set to <c>False</c> and type to <c>Direct</c>.</item>
+        ///     <item>If the webdriver is remote, then a local file detector is created, to enable uploading locally hosted files to the remote server.</item>
+        /// </list>
         /// </summary>
         /// <param name="headless">Whether to run the browser in headless or GUI mode. If running remotely this has no effect, and the browser is run in headless mode.</param>
         /// <param name="windowSize">The size of the browser window when running in headless mode. Defaults to 1920 x 1080.</param>
         /// <param name="browserArguments">Additional command-line arguments to pass to the browser upon starting it.</param>
-        /// <param name="downloadsFolder">A folder to redirect all via the browser downloads to. If omitted then downloads will be done according to their own configuration.</param>
+        /// <param name="downloadsFolder">A folder to redirect all via the browser downloads to. Keep in mind that if the webdriver is remote then this points to a folder on the server, and not on the local machine. If omitted then downloads will be done according to the respective browser's configuration. Note that no files are removed from this folder during the lifetime of the webdriver.</param>
         /// <returns>A reference to this instance, initialized and ready for use.</returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
@@ -145,6 +153,14 @@ namespace TMech.Utils
         {
             Debug.Assert(service is not null);
 
+            Browser = service switch
+            {
+                var x when x is ChromeDriverService => Browser.CHROME,
+                var x when x is FirefoxDriverService => Browser.FIREFOX,
+                var x when x is EdgeDriverService => Browser.EDGE,
+                _ => throw new InvalidOperationException()
+            };
+
             IsRemote = false;
             DriverService = service;
             BrowserLocation = binaryLocation;
@@ -154,11 +170,34 @@ namespace TMech.Utils
         private readonly DriverService? DriverService;
         private IWebDriver? _Webdriver;
 
+        /// <summary>
+        /// The url of the remote server. Is <c>null</c> if the context is not configured for a remote webdriver.
+        /// </summary>
         public Uri? RemoteServerUrl { get; }
+        /// <summary>
+        /// Whether the webdriver should be run with its GUI showing or not.
+        /// </summary>
         public bool IsHeadless { get; private set; }
+        /// <summary>
+        /// Whether this context represents a remote webdriver for running against a server running on <see cref="RemoteServerUrl"/>/
+        /// </summary>
         public bool IsRemote { get; }
+        /// <summary>
+        /// If browser file downloads are redirected from their standard location this is where they should be put.
+        /// </summary>
         public DirectoryInfo? DownloadsFolder { get; private set; }
+        /// <summary>
+        /// If the executable of the browser that should be started is in a different place than the default then this is where it lives.
+        /// </summary>
         public FileInfo? BrowserLocation { get; }
+        /// <summary>
+        /// Which browser this webdriver represents:
+        /// <list type="bullet">
+        ///     <item>If <see cref="Browser.CHROME"/> then <see cref="Webdriver"/> is an instance of <see cref="ChromeDriver"/>.</item>
+        ///     <item>If <see cref="Browser.FIREFOX"/> then <see cref="Webdriver"/> is an instance of <see cref="FirefoxDriver"/>.</item>
+        ///     <item>If <see cref="Browser.EDGE"/> then <see cref="Webdriver"/> is an instance of <see cref="EdgeDriver"/>.</item>
+        /// </list>
+        /// </summary>
         public Browser Browser { get; private set; }
 
         /// <summary>
@@ -176,6 +215,11 @@ namespace TMech.Utils
         private DriverOptions CreateOptions(string[]? browserArguments)
         {
             DriverOptions ReturnData;
+
+            if (!IsRemote && DownloadsFolder is not null && !DownloadsFolder.Exists)
+            {
+                throw new DirectoryNotFoundException($"Download folder does not exist on the local machine: {DownloadsFolder.FullName}");
+            }
 
             switch (Browser)
             {
@@ -210,24 +254,24 @@ namespace TMech.Utils
                     FirefoxOptions.AddAdditionalOption("browser.download.panel.show", false);
                     FirefoxOptions.AddAdditionalOption("browser.download.manager.showWhenStarting", false);
                     FirefoxOptions.AddAdditionalOption("browser.helperApps.alwaysAsk.force", false);
-                    /*FirefoxOptions.AddAdditionalFirefoxOption("browser.helperApps.neverAsk.saveToDisk",
+                    FirefoxOptions.AddAdditionalOption("browser.helperApps.neverAsk.saveToDisk",
                         string.Join(',', new string[]
                         {
-                            "application/octet-stream,",
-                            "text/octet-stream,",
-                            "text/plain,",
-                            "application/json,",
-                            "application/xml,",
-                            "text/csv,",
-                            "text/xml,",
-                            "application/zip,",
-                            "application/gzip,",
+                            "application/octet-stream",
+                            "text/octet-stream",
+                            "text/plain",
+                            "application/json",
+                            "application/xml",
+                            "text/csv",
+                            "text/xml",
+                            "application/zip",
+                            "application/gzip",
                             "application/x-gzip",
-                            "application/x-tar,",
-                            "image/bmp,",
-                            "image/jpeg,",
+                            "application/x-tar",
+                            "image/bmp",
+                            "image/jpeg",
                             "image/png",
-                            "application/pdf,",
+                            "application/pdf",
                             "application/msword",
                             "application/vnd.ms-excel",
                             "application/vnd.ms-powerpoint",
@@ -236,9 +280,9 @@ namespace TMech.Utils
                             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                             "application/vnd.oasis.opendocument.presentation",
                             "application/vnd.oasis.opendocument.spreadsheet",
-                            "application/vnd.oasis.opendocument.text",
+                            "application/vnd.oasis.opendocument.text"
                         })
-                    );*/
+                    );
 
                     if (DownloadsFolder is not null)
                     {
@@ -260,7 +304,7 @@ namespace TMech.Utils
                     var EdgeOptions = new EdgeOptions();
                     if (browserArguments is not null) EdgeOptions.AddArguments(browserArguments);
 
-                    // DO NOT use "--no-sandbox" as it causes chrome-processes to linger after shutdown!
+                    // DO NOT use "--no-sandbox" as it causes edge-processes to linger after shutdown!
                     EdgeOptions.AddUserProfilePreference("safebrowsing.enabled", "false");
                     EdgeOptions.AddUserProfilePreference("download.prompt_for_download", false);
 
@@ -298,8 +342,8 @@ namespace TMech.Utils
             if (IsDisposed) return;
             IsDisposed = true;
 
-            Trace.TraceInformation("WebdriverContext: Disposing the webdriver context (by user? {0})", isDisposing);
-            Webdriver?.Quit();
+            Trace.TraceInformation("WebdriverContext: Disposing the webdriver context (via GC? {0})", !isDisposing);
+            _Webdriver?.Quit();
             _Webdriver = null;
         }
 

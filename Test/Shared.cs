@@ -223,6 +223,8 @@ namespace Tests
 
         ~ChromeContext()
         {
+            if (IsDisposed) return;
+            IsDisposed = true;
             ChromeDriver?.Dispose();
         }
 
@@ -235,8 +237,8 @@ public class GlobalSetup
 {
     public static TimeSpan DefaultFetchContextTimeout { get; } = TimeSpan.FromSeconds(5.0d);
     public static int FetchContextTimeoutMinus1Sec { get; } = 4000;
-    public static FileInfo ChromeLocation = new FileInfo(@"C:\Temp\Chromium\chrome.exe");
-    public static FileInfo ChromeDriverLocation = new FileInfo(@"C:\Temp\Chromium\chromedriver.exe");
+    public static readonly FileInfo ChromeLocation = new FileInfo(@"C:\Temp\Chromium\chrome.exe");
+    public static readonly FileInfo ChromeDriverLocation = new FileInfo(@"C:\Temp\Chromium\chromedriver.exe");
 
     [OneTimeSetUp]
     public void BeforeAll()

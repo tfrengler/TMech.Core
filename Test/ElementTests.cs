@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using OpenQA.Selenium;
-using System.Collections;
 using System.Collections.Generic;
 using TMech.Elements;
 using TMech.Elements.Exceptions;
@@ -344,6 +343,35 @@ namespace Tests
 
                 Assert.That(TheElement1AttributeValue, Is.EqualTo("Context2-InputText-Value"));
                 Assert.That(TheElement2AttributeValue, Is.EqualTo(JSElements.Context2File));
+            }
+        }
+
+        #endregion
+
+        #region STATE CHECKERS
+
+        const string Category_StateCheckers = "Element = StateCheckers";
+        [TestCase(Category = Category_StateCheckers)]
+        public void IsDisplayed()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
+                Chrome.JsHideElement(JSElements.Context1Div2);
+
+                var TheElement1 = TestContext.Fetch(By.Id(JSElements.Context1Div1));
+                var TheElement2 = TestContext.Fetch(By.Id(JSElements.Context1Div2));
+                
+                bool? Element1IsDisplayed = null;
+                bool? Element2IsDisplayed = null;
+
+                Assert.DoesNotThrow(() => Element1IsDisplayed = TheElement1.IsDisplayed());
+                Assert.DoesNotThrow(() => Element2IsDisplayed = TheElement2.IsDisplayed());
+
+                Assert.That(Element1IsDisplayed, Is.Not.Null);
+                Assert.That(Element1IsDisplayed, Is.True);
+                Assert.That(Element2IsDisplayed, Is.Not.Null);
+                Assert.That(Element2IsDisplayed, Is.False);
             }
         }
 

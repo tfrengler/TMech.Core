@@ -1,11 +1,8 @@
 using OpenQA.Selenium;
-using OpenQA.Selenium.DevTools.V121.WebAuthn;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace TMech.Elements
@@ -81,67 +78,6 @@ namespace TMech.Elements
         }
 
         #endregion
-
-        /// <summary>
-        /// Returns a list of all elements in the chain, with the first index being the current instance and the last being the first (top) element in the chain.<br/>
-        /// This is achieved by walking the <see cref="FetchContext.Parent"/>-tree via <see cref="ProducedBy"/>.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<Element> GetElementChain()
-        {
-            var ElementChain = new List<Element>
-            {
-                this
-            };
-            Element? ThisElement = this;
-
-            while (true)
-            {
-                FetchContext CurrentFactory = ThisElement.ProducedBy;
-                ThisElement = CurrentFactory.Parent;
-                
-                if (ThisElement is null) break;
-                ElementChain.Add(ThisElement);
-            }
-
-            return ElementChain;
-        }
-
-        /// <summary>
-        /// Attempts to reacquire the underlying <see cref="WebElement"/> this instance is wrapped around. Note that if the <see cref="RelatedContext"/> is another element, and that one is stale, this will fail indefinitely as staleness is not recursively resolved.<br/>
-        /// Note that elements acquired via <see cref="FetchContext.FetchAll"/> cannot be reacquired.
-        /// </summary>
-        /// <param name="throwOnError">Whether to throw an exception if the element cannot be reacquired.</param>
-        public Element Reacquire(bool throwOnError)
-        {
-            // Cannot reacquire if located through FetchAll because re-applying
-            // the locator does not get us the same element since it was indexed
-            // out of the resulting array
-            if (LocatedAsMultiple) return this;
-
-            try
-            {
-                if (ProducedBy.Parent is not null)
-                {
-                    RelatedContext = ProducedBy.Parent.Reacquire(true).WrappedElement;
-                }
-                WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
-            }
-            catch(WebDriverException)
-            {
-                if (throwOnError) throw;
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Returns the underlying <see cref="WebElement"/> that this instance is wrapped around.
-        /// </summary>
-        public WebElement UnWrap()
-        {
-            return WrappedElement;
-        }
 
         #region ACTIONS/INTERACTIONS
 
@@ -523,8 +459,69 @@ namespace TMech.Elements
             return ReturnData;
         }
 
+        /// <summary>
+        /// Returns a list of all elements in the chain, with the first index being the current instance and the last being the first (top) element in the chain.<br/>
+        /// This is achieved by walking the <see cref="FetchContext.Parent"/>-tree via <see cref="ProducedBy"/>.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Element> GetElementChain()
+        {
+            var ElementChain = new List<Element>
+            {
+                this
+            };
+            Element? ThisElement = this;
+
+            while (true)
+            {
+                FetchContext CurrentFactory = ThisElement.ProducedBy;
+                ThisElement = CurrentFactory.Parent;
+
+                if (ThisElement is null) break;
+                ElementChain.Add(ThisElement);
+            }
+
+            return ElementChain;
+        }
+
+        /// <summary>
+        /// Attempts to reacquire the underlying <see cref="WebElement"/> this instance is wrapped around. Note that if the <see cref="RelatedContext"/> is another element, and that one is stale, this will fail indefinitely as staleness is not recursively resolved.<br/>
+        /// Note that elements acquired via <see cref="FetchContext.FetchAll"/> cannot be reacquired.
+        /// </summary>
+        /// <param name="throwOnError">Whether to throw an exception if the element cannot be reacquired.</param>
+        public Element Reacquire(bool throwOnError)
+        {
+            // Cannot reacquire if located through FetchAll because re-applying
+            // the locator does not get us the same element since it was indexed
+            // out of the resulting array
+            if (LocatedAsMultiple) return this;
+
+            try
+            {
+                if (ProducedBy.Parent is not null)
+                {
+                    RelatedContext = ProducedBy.Parent.Reacquire(true).WrappedElement;
+                }
+                WrappedElement = (WebElement)RelatedContext.FindElement(RelatedLocator);
+            }
+            catch (WebDriverException)
+            {
+                if (throwOnError) throw;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Returns the underlying <see cref="WebElement"/> that this instance is wrapped around.
+        /// </summary>
+        public WebElement UnWrap()
+        {
+            return WrappedElement;
+        }
+
         #endregion
-    
+
     }
 
 }

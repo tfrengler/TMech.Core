@@ -14,18 +14,6 @@ namespace Tests
         private readonly DirectoryInfo DownloadsFolder = new System.IO.DirectoryInfo("C:/Temp");
         private System.Drawing.Size WindowSize = new System.Drawing.Size(1024, 768);
 
-        // Remote, default settings, use Chrome
-        // Local with driver, no binary, use Chrome
-        // Local with browser, with binary, use Chrome
-        // Local with browser, without binary, use Chrome
-        // Remote, custom settings, use Chrome
-        // Local with browser, without binary, custom settings use Chrome
-
-        // Local with browser, no binary - CHROME
-        // Local with browser, no binary - FIREFOX
-        // Local with browser, no binary - EDGE
-        // Fail when interacting with webdriver before initialization
-
         private const string Category = "WebdriverContext";
         [TestCase(Category = Category)]
         public void Remote_DefaultInitialize()

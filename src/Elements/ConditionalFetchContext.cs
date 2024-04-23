@@ -122,7 +122,12 @@ namespace TMech.Elements
             ArgumentNullException.ThrowIfNull(attributeName);
             ArgumentNullException.ThrowIfNull(attributeValue);
 
-            return InternalFetchWhen(element => element.GetAttribute(attributeName) == attributeValue, $"once attribute '{attributeName}' was equal to '{attributeValue}'");
+            return InternalFetchWhen(element => {
+                string? Value = element.GetAttribute(attributeName);
+                if (Value is null) return false;
+                return Value.Equals(attributeValue, StringComparison.OrdinalIgnoreCase);
+            },
+            $"once attribute '{attributeName}' was equal to '{attributeValue}'");
         }
 
         /// <summary>
@@ -137,7 +142,12 @@ namespace TMech.Elements
             ArgumentNullException.ThrowIfNull(attributeName);
             ArgumentNullException.ThrowIfNull(attributeValue);
 
-            return InternalFetchWhen(element => element.GetAttribute(attributeName).StartsWith(attributeValue), $"once attribute '{attributeName}' started with '{attributeValue}'");
+            return InternalFetchWhen(element => {
+                string? Value = element.GetAttribute(attributeName);
+                if (Value is null) return false;
+                return Value.StartsWith(attributeValue, StringComparison.OrdinalIgnoreCase);
+            },
+            $"once attribute '{attributeName}' started with '{attributeValue}'");
         }
 
         /// <summary>
@@ -152,7 +162,12 @@ namespace TMech.Elements
             ArgumentNullException.ThrowIfNull(attributeName);
             ArgumentNullException.ThrowIfNull(attributeValue);
 
-            return InternalFetchWhen(element => element.GetAttribute(attributeName).EndsWith(attributeValue), $"once attribute '{attributeName}' ended with '{attributeValue}'");
+            return InternalFetchWhen(element => {
+                string? Value = element.GetAttribute(attributeName);
+                if (Value is null) return false;
+                return Value.EndsWith(attributeValue, StringComparison.OrdinalIgnoreCase);
+            },
+            $"once attribute '{attributeName}' ended with '{attributeValue}'");
         }
 
         /// <summary>
@@ -167,7 +182,12 @@ namespace TMech.Elements
             ArgumentNullException.ThrowIfNull(attributeName);
             ArgumentNullException.ThrowIfNull(attributeValue);
 
-            return InternalFetchWhen(element => element.GetAttribute(attributeName).Contains(attributeValue), $"once attribute '{attributeName}' contained '{attributeValue}'");
+            return InternalFetchWhen(element => {
+                string? Value = element.GetAttribute(attributeName);
+                if (Value is null) return false;
+                return Value.Contains(attributeValue, StringComparison.OrdinalIgnoreCase);
+            },
+            $"once attribute '{attributeName}' contained '{attributeValue}'");
         }
 
         /// <summary>
@@ -180,7 +200,12 @@ namespace TMech.Elements
         {
             ArgumentNullException.ThrowIfNull(attributeName);
 
-            return InternalFetchWhen(element => element.GetAttribute(attributeName).Trim().Length > 0, $"once attribute '{attributeName}' had a value");
+            return InternalFetchWhen(element => {
+                string? Value = element.GetAttribute(attributeName);
+                if (Value is null) return false;
+                return Value.Length > 0;
+            },
+            $"once attribute '{attributeName}' had a value");
         }
 
         /// <summary>

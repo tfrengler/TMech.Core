@@ -347,7 +347,10 @@ namespace TMech.Elements
         }
 
         /// <summary>
-        /// Retrieves the text-content of the element, with leading and trailing whitespace removed. Successive whitespace is reduced to one, and linebreaks are replaced with one space.
+        /// <para>Retrieves the text-content of the element, with leading and trailing whitespace removed. Successive whitespace is reduced to one, and linebreaks are replaced with one space.</para>
+        /// <para>For example an element whose inner text is:<br/>
+        /// <c>"  \u000cContext1\t-Div2\n\r-Text\u000b-Value "</c><br/>
+        /// would return: <c>"Context1 -Div2 -Text -Value"</c></para> 
         /// </summary>
         /// <returns>The text value of the element, or <see cref="string.Empty"/></returns>
         public string GetText()

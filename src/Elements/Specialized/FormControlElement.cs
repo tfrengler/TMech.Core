@@ -6,12 +6,12 @@ namespace TMech.Elements.Specialized
 {
     /// <summary>
     /// <para>
-    /// Represents a form control element, such as &lt;input&gt;, &lt;option&gt;, &lt;radio&gt;, &lt;textarea&gt; etc.
+    /// Represents a form control element, such as <c>&lt;input&gt;</c>, <c>&lt;option&gt;</c>, <c>&lt;radio&gt;</c>, <c>&lt;textarea&gt;</c> among others.
     /// </para>
     /// <para>
     /// Allows access to standard methods that are (more or less) applicable to all form controls such as getting the name-attribute, input-type, maxlength-attribute, src-attribute etc.
     /// </para>
-    /// Getting and setting the data is exposed via the value-attribute which is treated as text. For more specialized elements with strong data types see other classes in this namespace.
+    /// Getting and setting data in form control elements is done via the <c>value</c>-attribute which is treated as text. For more specialized elements with support for strong data types see other classes in this namespace.
     /// </summary>
     public class FormControlElement : Element
     {
@@ -104,9 +104,9 @@ namespace TMech.Elements.Specialized
         #region DATA RETRIEVERS
 
         /// <summary>
-        /// Attempts to retrieve the data from the form control-element by reading out its value-attribute.
+        /// Retrieves the form control's value by reading out its <c>value</c>-attribute.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A string representing the value of the name-attribute trimmed of leading and trailing whitespace.</returns>
         public string GetValue()
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control element", () =>
@@ -114,13 +114,13 @@ namespace TMech.Elements.Specialized
                 return WrappedElement.GetAttribute("value");
             });
 
-            return ReturnData ?? string.Empty;
+            return ReturnData?.Trim() ?? string.Empty;
         }
 
         /// <summary>
-        /// Retrieves the value of the name-attribute. Used by all form control elements to uniquely identify them within a form, and is the identifier used when the form is submitted.
+        /// Retrieves the value of the <c>name</c>-attribute. Used by all form control elements to uniquely identify them within a form, and is the identifier used when the form is submitted.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A string representing the value of the name-attribute.</returns>
         public string GetName()
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's name-attribute", () =>
@@ -128,13 +128,13 @@ namespace TMech.Elements.Specialized
                 return WrappedElement.GetAttribute("name");
             });
 
-            return ReturnData ?? string.Empty;
+            return ReturnData?.Trim() ?? string.Empty;
         }
 
         /// <summary>
-        /// Retrieves the input-type, such as 'text', 'checkbox', 'date' etc. Returns an empty string if the element is not an input-element.
+        /// Retrieves the input-type, such as <c>text</c>, <c>checkbox</c>, <c>date</c> etc.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A string representing the input-type or <see cref="string.Empty"/> if the element is not an <c>input</c>-element.</returns>
         public string GetInputType()
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to determine form control input-type", () =>
@@ -146,9 +146,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the min-attribute. This is only relevant for form controls of type date, month, week, time, datetime-local, number, and range.
+        /// Retrieves the value of the <c>min</c>-attribute. This is only relevant for form controls of type <c>date</c>, <c>month</c>, <c>week</c>, <c>time</c>, <c>datetime</c>-local, <c>number</c>, and <c>range</c>.
         /// </summary>
-        /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the min-attribute OR the value can not be parsed.</returns>
+        /// <returns>The value of the min-attribute parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the min-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMin()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's min-attribute", () =>
@@ -161,9 +161,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the max-attribute. This is only relevant for form controls of type date, month, week, time, datetime-local, number, and range.
+        /// Retrieves the value of the <c>max</c>-attribute. This is only relevant for form controls of type <c>date</c>, <c>month</c>, <c>week</c>, <c>time</c>, <c>datetime</c>-local, <c>number</c>, and <c>range</c>.
         /// </summary>
-        /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the max-attribute OR the value can not be parsed.</returns>
+        /// <returns>The value of the max-attribute parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the max-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMax()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's max-attribute", () =>
@@ -176,9 +176,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the maxlength-attribute. This is only relevant for form controls of type text, search, url, tel, email, and password.
+        /// Retrieves the value of the <c>maxlength-attribute</c>. This is only relevant for form controls of type text, search, url, tel, email, and password.
         /// </summary>
-        /// <returns>The value as an integer or <see langword="null"/> if the element does not have the maxlength-attribute OR the value can not be parsed.</returns>
+        /// <returns>The value of the maxlength-attribute as an integer <i>or</i> <see langword="null"/> if the element does not have the maxlength-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMaxLength()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's maxlength-attribute", () =>
@@ -191,9 +191,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the minlength-attribute. This is only relevant for form controls of type text, search, url, tel, email, and password.
+        /// Retrieves the value of the <c>minlength</c>-attribute. This is only relevant for form controls of type text, search, url, tel, email, and password.
         /// </summary>
-        /// <returns>The value as an integer or <see langword="null"/> if the element does not have the minlength-attribute OR the value can not be parsed.</returns>
+        /// <returns>The value of the minlength-attribute as an integer <i>or</i> <see langword="null"/> if the element does not have the minlength-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMinLength()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's minlength-attribute", () =>
@@ -206,9 +206,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the src-attribute. This is only relevant for form controls of type image but is used by other elements that are not form controls (embed, video, audio etc).
+        /// Retrieves the value of the <c>src-attribute</c>. This is only relevant for form controls of type <c>image</c> but is used by other elements that are not form controls (<c>embed</c>, <c>video</c>, <c>audio</c> etc).
         /// </summary>
-        /// <returns>The value of the src-attribute or an empty string if the element does not have a src-attribute.</returns>
+        /// <returns>The value of the src-attribute or <see cref="string.Empty"/> if the element does not have a src-attribute.</returns>
         public string GetSource()
         {
             string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's src-attribute", () =>
@@ -220,9 +220,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Retrieves the value of the step-attribute. This is only relevant for form controls of type date, month, week, time, datetime-local, number, and range.
+        /// Retrieves the value of the <c>step-attribute</c>. This is only relevant for form controls of type date, month, week, time, datetime-local, number, and range.
         /// </summary>
-        /// <returns>The value parsed as an integer or <see langword="null"/> if the element does not have the step-attribute OR the value can not be parsed.</returns>
+        /// <returns>The value parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the step-attribute or the value can not be parsed.</returns>
         public int? GetStep()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's step-attribute", () =>

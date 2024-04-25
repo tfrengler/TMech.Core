@@ -51,7 +51,7 @@ The **ElementFactory** and all of its associated classes and methods are well do
 var WebdriverContext = WebdriverContext.CreateLocator(Browser.CHROME);
 IWebDriver Webdriver = WebdriverContext.Initialize(true);
 // The second argument to the constructor is the max amount of time the factory should attempt to fetch elements before giving up. This timeout is propagated to all elements that it fetches.
-Elements = new Utils.FetchContext(Webdriver, TimeSpan.FromSeconds(30.0d));
+Elements = new Elements.FetchContext(Webdriver, TimeSpan.FromSeconds(30.0d));
 
 // Getting elements is mostly done by Fetch. Fetch tries to get the element 
 // that matches the locator and will keep trying until the internal timeout is reached

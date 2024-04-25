@@ -60,8 +60,8 @@ Element SomeElement = Elements.Fetch(By.Id("SomeId"));
 
 // You can also fetch elements conditionally, that is once they fullfil certain conditions
 Element SomeElement = Elements
-						.FetchWhen() // This creates an instance of ElementWaiter that allows for conditional checks
-						.IsEnabled(); // This only returns the element once it is enabled (this goes for input-elements)
+			.FetchWhen() // This creates an instance of ElementWaiter that allows for conditional checks
+			.IsEnabled(); // This only returns the element once it is enabled (this goes for input-elements)
 
 // Once you have an element you can interact with it. All of these methods come with built in retry. Examples:
 
@@ -77,9 +77,9 @@ Element[] BunchOfElements = Elements.FetchAll(By.Id("SomeId"), 4); // Returns on
 
 // You can also select elements within the context of another element through chaining calls
 Element SomeElement = Elements
-						.Fetch(By.Id("SomeId"))
-						.Within() // This means that all subsequent calls to Fetch, FetchWhen or FetchAll only matches elements that are children or descendants of "SomeId"
-						.Fetch(By.CssSelector("[name='SomeName']"));
+			.Fetch(By.Id("SomeId"))
+			.Within() // This means that all subsequent calls to Fetch, FetchWhen or FetchAll only matches elements that are children or descendants of "SomeId"
+			.Fetch(By.CssSelector("[name='SomeName']"));
 ```
 
 All of the element interaction methods not only retry on failure, they can also reacquire elements that are *stale* (no longer attached to the page). This even works recursively so elements acquired through multiple calls to **Within()** followed by **Fetch()** can be reacquired.
@@ -103,23 +103,23 @@ InputRadioElement
 
 // input[type='date']: 
 var DateElement = Elements
-					.Fetch(By.Id("SomeId"))
-					.AsInputDate()
-					.WithRobustSelection();
+			.Fetch(By.Id("SomeId"))
+			.AsInputDate()
+			.WithRobustSelection();
 
 var MyDate = new System.DateTime(2052,12,31);
 DateElement.SetDateByJS(MyDate); // Browser agnostic - and even ReactJS - friendly date-setter method
 
 // <select>:
 var DropdownElement = Elements
-						.Fetch(By.Id("SomeId"));
-						.AsDropdown()
-						.WithRobustSelection();
+			.Fetch(By.Id("SomeId"));
+			.AsDropdown()
+			.WithRobustSelection();
 
 // Setting an option in a dropdown
 DropdownElement.SelectByText("some text");
 // Getting the text of the selected option
 string ChosenOptionText = DropdownElement
-							.GetSelectedOption()
-							.GetText();
+				.GetSelectedOption()
+				.GetText();
 ```

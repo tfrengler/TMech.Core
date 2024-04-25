@@ -77,7 +77,7 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// Deletes all files and folders in <see cref="InstallLocation"/>.
+        /// Deletes all files and folders in <see cref="InstallLocation"/> but not the directory itself.
         /// </summary>
         public void ClearInstallLocation()
         {
@@ -103,7 +103,7 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// Retrieves the latest available version of Chrome online.
+        /// Retrieves the latest available version of Chrome online for a given platform.
         /// </summary>
         public string GetLatestAvailableVersion(OSPlatform platform)
         {
@@ -111,11 +111,12 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// <para>Downloads and extracts Chrome and its corresponding webdriver into <see cref="InstallLocation"/> if the currently installed version is lower than the latest available version OR if Chrome is not installed. Only major revisions are counted when factoring in version differences.</para>
-        /// NOTE: If there is a currently installed version of Chrome it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
+        /// <para>Downloads and extracts <b>Chrome for Testing</b> 64-bit and its corresponding webdriver from the <b>stable</b>-branch into <see cref="InstallLocation"/> for a given platform. It does this only if the currently installed version is lower than the latest available version <i>OR</i> if it is not installed at all. Only <b>major revisions</b> are counted when factoring in version differences.</para>
+        /// <b>NOTE:</b> If there is a currently installed version of Chrome it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
         /// </summary>
-        /// <param name="skipDriver">If <see langword="true"/> then only the browser will be installed, skipping the webdriver.</param>
-        /// <param name="forceUpdate">Whether to force a download and install of Chrome even if the installed version is already the newest.</param>
+        /// <param name="platform">The OS platform to download Chrome for. Only <c>Windows</c>, <c>Linux</c> and <c>Mac</c>.</param>
+        /// <param name="skipDriver">If <see langword="true"/> then only the browser will be installed, skipping the webdriver. If there is an existing webdriver binary it will not be deleted though.</param>
+        /// <param name="forceUpdate">Whether to force a download and install Chrome even if the installed version is already the newest. Effectively a reinstall.</param>
         /// <returns><see langword="true"/> if Chrome was downloaded and installed, <see langword="false"/> otherwise</returns>
         public bool DownloadLatestVersion(OSPlatform platform, bool skipDriver = false, bool forceUpdate = false)
         {
@@ -173,7 +174,7 @@ namespace TMech.Utils
                 }
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "chrome"), UnixFilePermissions);
                 File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "chrome_crashpad_handler"), UnixFilePermissions);
@@ -189,22 +190,16 @@ namespace TMech.Utils
             return true;
         }
 
-        public void Dispose()
+        private Tuple<string, string, string> GetVersionAndDownloadURLs(OSPlatform platform)
         {
-            if (IsDisposed) return;
-            IsDisposed = true;
+            string PlatformName = platform switch
+            {
+                var x when x == OSPlatform.Windows => "win64",
+                var x when x == OSPlatform.Linux => "linux64",
+                var x when x == OSPlatform.OSX => "mac-x64",
+                _ => throw new PlatformNotSupportedException("Only Win, Linux and Mac platforms are supported")
+            };
 
-            GC.SuppressFinalize(this);
-            HttpClient?.Dispose();
-        }
-
-        ~ChromeProvider()
-        {
-            HttpClient?.Dispose();
-        }
-
-        public Tuple<string, string, string> GetVersionAndDownloadURLs(OSPlatform platform)
-        {
             var Request = new HttpRequestMessage()
             {
                 RequestUri = new Uri(ManifestURL),
@@ -230,19 +225,25 @@ namespace TMech.Utils
                 throw new JsonException("Failed to deserialize GitHub response as JSON:" + Environment.NewLine + ResponseContent, error);
             }
 
-            string PlatformName = platform switch
-            {
-                var x when x == OSPlatform.Windows => "win64",
-                var x when x == OSPlatform.Linux => "linux64",
-                var x when x == OSPlatform.OSX => "mac-x64",
-                _ => throw new PlatformNotSupportedException("Only Win, Linux and Mac platforms are supported")
-            };
-
             Debug.Assert(ReleaseData is not null);
             var ChromeUrl = ReleaseData.Channels.Stable.Downloads.Chrome.Single(current => current.Platform == PlatformName).Url;
             var ChromedriverUrl = ReleaseData.Channels.Stable.Downloads.Chromedriver.Single(current => current.Platform == PlatformName).Url;
 
             return new Tuple<string, string, string>(ReleaseData.Channels.Stable.Version, ChromeUrl, ChromedriverUrl);
+        }
+
+        public void Dispose()
+        {
+            if (IsDisposed) return;
+            IsDisposed = true;
+
+            GC.SuppressFinalize(this);
+            HttpClient?.Dispose();
+        }
+
+        ~ChromeProvider()
+        {
+            HttpClient?.Dispose();
         }
     }
 }

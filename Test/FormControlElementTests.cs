@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium;
-using System;
 using System.IO;
 using TMech.Elements;
 using TMech.Elements.Extensions;
@@ -197,6 +196,61 @@ namespace Tests
                 Assert.DoesNotThrow(() => Value = TheElement.AsFormControl().GetSource());
                 Assert.That(Value, Is.EqualTo("http://somewhere.com/doesnotexist.jpeg"));
                 Assert.That(TestContext.Fetch(By.Id(JSElements.Context1Div1)).AsFormControl().GetSource(), Is.Empty);
+            }
+        }
+
+        #endregion
+
+        #region STATE CHECKING
+
+        private const string Category_StateCheckers = "FormControlElement = StateCheckers";
+        [TestCase(Category = Category_StateCheckers)]
+        public void IsRequired()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
+                var TheElement = TestContext.Fetch(By.Id(JSElements.Context2File));
+                Chrome.JsChangeElementAttribute(JSElements.Context2File, "required", "true");
+
+                bool? Value = null;
+
+                Assert.DoesNotThrow(() => Value = TheElement.AsFormControl().IsRequired());
+                Assert.That(Value, Is.True);
+                Assert.That(TestContext.Fetch(By.Id(JSElements.Context1Div1)).AsFormControl().IsRequired(), Is.False);
+            }
+        }
+
+        [TestCase(Category = Category_StateCheckers)]
+        public void IsReadOnly()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
+                var TheElement = TestContext.Fetch(By.Id(JSElements.Context2File));
+                Chrome.JsChangeElementAttribute(JSElements.Context2File, "readonly", "true");
+
+                bool? Value = null;
+
+                Assert.DoesNotThrow(() => Value = TheElement.AsFormControl().IsReadOnly());
+                Assert.That(Value, Is.True);
+                Assert.That(TestContext.Fetch(By.Id(JSElements.Context1Div1)).AsFormControl().IsReadOnly(), Is.False);
+            }
+        }
+
+        [TestCase(Category = Category_StateCheckers)]
+        public void IsEnabled()
+        {
+            using (var Chrome = new ChromeContext())
+            {
+                var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
+                var TheElement = TestContext.Fetch(By.Id(JSElements.Context2Radio3));
+
+                bool? Value = null;
+
+                Assert.DoesNotThrow(() => Value = TheElement.AsFormControl().IsEnabled());
+                Assert.That(Value, Is.False);
+                Assert.That(TestContext.Fetch(By.Id(JSElements.Context1Div1)).AsFormControl().IsEnabled(), Is.True);
             }
         }
 

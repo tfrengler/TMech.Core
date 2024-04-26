@@ -36,7 +36,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 var Exists = TestContext.Exists(By.Id("gnargle"), out Element? result);
-                Timer.Stop();
 
                 Assert.That(Exists, Is.False);
                 Assert.That(result, Is.Null);
@@ -60,8 +59,6 @@ namespace Tests
                 {
                     Exists = TestContext.Within().Exists(By.Id(JSElements.Context3Div3Span1), out Result);
                 });
-
-                Timer.Stop();
 
                 Assert.That(TheError, Is.Not.Null);
                 Assert.That(Exists, Is.Null);
@@ -95,7 +92,6 @@ namespace Tests
                 var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
                 var Timer = Stopwatch.StartNew();
                 var TheError = Assert.Throws<TMech.Elements.Exceptions.FetchElementException>(() => TestContext.Fetch(By.Id("gnargle")));
-                Timer.Stop();
 
                 Assert.That(Timer.Elapsed, Is.GreaterThan(GlobalSetup.DefaultFetchContextTimeout));
                 Assert.That(TheError!.InnerException, Is.Not.Null);
@@ -113,7 +109,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 Element Result = TestContext.Fetch(By.Id(JSElements.Context1Div3 + '0'));
-                Timer.Stop();
 
                 Assert.That(Result, Is.Not.Null);
                 Assert.That(Timer.Elapsed, Is.GreaterThan(TimeSpan.FromMilliseconds(GlobalSetup.FetchContextTimeoutMinus1Sec)));
@@ -130,7 +125,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 bool Success = TestContext.TryFetch(By.Id(JSElements.Context1Div3 + '0'), out Element? element, out Exception? error);
-                Timer.Stop();
 
                 Assert.That(Success, Is.True);
                 Assert.That(element, Is.Not.Null);
@@ -251,7 +245,6 @@ namespace Tests
                 
                 var Timer = Stopwatch.StartNew();
                 var Results = TestContext.FetchAll(By.CssSelector("div[id^='Context3-Div']"), 4);
-                Timer.Stop();
 
                 Assert.That(Results, Is.Not.Null);
                 Assert.That(Results.Length, Is.EqualTo(4));
@@ -270,7 +263,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 bool Success = TestContext.TryFetchAll(By.CssSelector("div[id^='Context3-Div']"), out Element[]? Results, 4);
-                Timer.Stop();
 
                 Assert.That(Success, Is.True);
                 Assert.That(Results, Is.Not.Null);
@@ -289,7 +281,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 bool Success = TestContext.TryFetchAll(By.CssSelector("div[id^='Context3-Div']"), out Element[] Results, 4);
-                Timer.Stop();
 
                 Assert.That(Success, Is.False);
                 Assert.That(Results, Is.Not.Null);
@@ -309,7 +300,6 @@ namespace Tests
 
                 var Timer = Stopwatch.StartNew();
                 var Error = Assert.Throws<TMech.Elements.Exceptions.FetchElementException>(() => DueToBeStaleContext.Within().FetchAll(By.TagName("span")));
-                Timer.Stop();
 
                 Assert.That(Error!.InnerException, Is.Not.Null);
                 Assert.That(Error.InnerException!.GetType(), Is.EqualTo(typeof(TMech.Elements.Exceptions.ReacquireElementException)));

@@ -40,7 +40,7 @@ namespace TMech.Elements.Specialized
         /// </summary>
         public void SetValue(string input, bool clear = true)
         {
-            _ = InternalRetryActionInvoker($"Failed to set value in formcontrol-element (clear? {clear})", () =>
+            _ = InternalRetryActionInvoker($"Failed to set value in form-element (clear? {clear})", () =>
             {
                 if (clear) WrappedElement.Clear();
                 WrappedElement.SendKeys(input);
@@ -75,7 +75,7 @@ namespace TMech.Elements.Specialized
                     arguments[0].dispatchEvent(new Event('change', {{bubbles: true}}));
                 ";
 
-            _ = InternalRetryActionInvoker($"Failed to set value in formcontrol-element via Javascript", () =>
+            _ = InternalRetryActionInvoker($"Failed to set value in form-element via Javascript", () =>
             {
                 WrappedElement.SendKeys(input);
                 if (!RobustSelection) return true;
@@ -93,7 +93,7 @@ namespace TMech.Elements.Specialized
         {
             if (!System.IO.File.Exists(input))
             {
-                throw new FileNotFoundException("Unable to upload file to form control element as file cannot be found", input);
+                throw new FileNotFoundException("Unable to upload file to form-element because file cannot be found", input);
             }
 
             SendKeys(input);
@@ -109,7 +109,7 @@ namespace TMech.Elements.Specialized
         /// <returns>A string representing the value of the name-attribute trimmed of leading and trailing whitespace.</returns>
         public string GetValue()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control element", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's element", () =>
             {
                 return WrappedElement.GetAttribute("value");
             });
@@ -123,7 +123,7 @@ namespace TMech.Elements.Specialized
         /// <returns>A string representing the value of the name-attribute.</returns>
         public string GetName()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's name-attribute", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's name-attribute", () =>
             {
                 return WrappedElement.GetAttribute("name");
             });
@@ -137,7 +137,7 @@ namespace TMech.Elements.Specialized
         /// <returns>A string representing the input-type or <see cref="string.Empty"/> if the element is not an <c>input</c>-element.</returns>
         public string GetInputType()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to determine form control input-type", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to determine form-element's input-type", () =>
             {
                 return WrappedElement.GetAttribute("type");
             });
@@ -151,7 +151,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value of the min-attribute parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the min-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMin()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's min-attribute", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's min-attribute", () =>
             {
                 return WrappedElement.GetAttribute("min");
             });
@@ -166,7 +166,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value of the max-attribute parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the max-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMax()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's max-attribute", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's max-attribute", () =>
             {
                 return WrappedElement.GetAttribute("max");
             });
@@ -181,7 +181,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value of the maxlength-attribute as an integer <i>or</i> <see langword="null"/> if the element does not have the maxlength-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMaxLength()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's maxlength-attribute", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's maxlength-attribute", () =>
             {
                 return WrappedElement.GetAttribute("maxlength");
             });
@@ -196,7 +196,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value of the minlength-attribute as an integer <i>or</i> <see langword="null"/> if the element does not have the minlength-attribute or the value can not be parsed as an integer.</returns>
         public int? GetMinLength()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's minlength-attribute", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's minlength-attribute", () =>
             {
                 return WrappedElement.GetAttribute("minlength");
             });
@@ -211,7 +211,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value of the src-attribute or <see cref="string.Empty"/> if the element does not have a src-attribute.</returns>
         public string GetSource()
         {
-            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form control's src-attribute", () =>
+            string? ReturnData = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's src-attribute", () =>
             {
                 return WrappedElement.GetAttribute("src");
             });
@@ -225,7 +225,7 @@ namespace TMech.Elements.Specialized
         /// <returns>The value parsed as an integer <i>or</i> <see langword="null"/> if the element does not have the step-attribute or the value can not be parsed.</returns>
         public int? GetStep()
         {
-            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form control's step-attribute", () =>
+            string? AttributeValue = InternalRetryActionInvoker("Failed to retrieve the value of the form-element's step-attribute", () =>
             {
                 return WrappedElement.GetAttribute("step");
             });
@@ -239,9 +239,9 @@ namespace TMech.Elements.Specialized
         #region STATE CHECKERS
 
         /// <summary>
-        /// Checks whether the form control element is readonly meaning the element not editable by the user.
+        /// Checks the <c>required</c>-attribute of the element which indicates that the user must specify a value for the input before the owning form can be submitted.
         /// </summary>
-        /// <returns><see langword="true"/> if the element is required or <see langword="false"/> if not or the element does not support the required-attribute.</returns>
+        /// <returns><see langword="true"/> if the element is required <i>or</i> <see langword="false"/> if not or the element does not support the required-attribute.</returns>
         public bool IsRequired()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to determine if form-element is required", () =>
@@ -254,9 +254,9 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Checks whether the form control element is readonly. Is supported by the text, search, url, tel, email, date, month, week, time, datetime-local, number, and password input types
+        /// Checks the <c>readonly</c>-attribute which indicates the element is not mutable, that user can not edit the control. Is supported by the <c>text</c>, <c>search</c>, <c>url</c>, <c>tel</c>, <c>email</c>, <c>date</c>, <c>month</c>, <c>week</c>, <c>time</c>, <c>datetime-local</c>, <c>number</c>, and <c>password</c> input types.
         /// </summary>
-        /// <returns><see langword="true"/> if the element is enabled or <see langword="false"/> if not or the element does not support the readonly-attribute.</returns>
+        /// <returns><see langword="true"/> if the element is readonly <i>or</i> <see langword="false"/> if not or the element does not support the readonly-attribute.</returns>
         public bool IsReadOnly()
         {
             string? AttributeValue = InternalRetryActionInvoker("Failed to determine if form-element is readonly", () =>
@@ -269,12 +269,12 @@ namespace TMech.Elements.Specialized
         }
 
         /// <summary>
-        /// Checks whether the form control element is enabled. Specifically, disabled inputs do not receive the click event, and disabled inputs are not submitted with the form.
+        /// Checks the <c>disabled</c>-attribute. Specifically, disabled inputs do not receive the click event, and disabled inputs are not submitted with the form.
         /// </summary>
         /// <returns><see langword="true"/> if the element is enabled or if the element does not support the disabled-attribute, <see langword="false"/> otherwise.</returns>
         public bool IsEnabled()
         {
-            bool ReturnData = InternalRetryActionInvoker("Failed to determine if element is enabled", () =>
+            bool ReturnData = InternalRetryActionInvoker("Failed to determine if form-element is enabled", () =>
             {
                 return WrappedElement.Enabled;
             });

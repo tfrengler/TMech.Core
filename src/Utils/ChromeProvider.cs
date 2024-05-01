@@ -28,7 +28,6 @@ namespace TMech.Utils
         private const string VersionFileName = "VERSION";
         private const UnixFileMode UnixFilePermissions = UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.UserRead | UnixFileMode.GroupRead;
 
-
         #region Manifest JSON models
         private sealed record Manifest
         {
@@ -67,13 +66,20 @@ namespace TMech.Utils
         }
         #endregion
 
+        /// <summary>Sets or gets the timeouts for requests as well as downloading data. Defaults to 30 seconds.</summary>
+        public TimeSpan RequestTimeout { get => HttpClient.Timeout; set => HttpClient.Timeout = value; }
+
         public ChromeProvider(DirectoryInfo installLocation)
         {
             Debug.Assert(installLocation != null);
             InstallLocation = installLocation;
 
             if (!InstallLocation.Exists) throw new DirectoryNotFoundException("Chrome install directory does not exist: " + installLocation.FullName);
-            HttpClient = new HttpClient();
+            HttpClient = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(30.0d)
+            };
+            HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TMech.ChromeProvider", "1.0"));
         }
 
         /// <summary>
@@ -124,10 +130,10 @@ namespace TMech.Utils
             string[] DownloadURLs = skipDriver ? new string[] { ChromeURL } : new string[] { ChromeURL, ChromedriverURL };
             string CurrentVersion = GetCurrentInstalledVersion();
 
-            var LatestVersionSanitized = new string(LatestVersion.Split('.').First().Where(char.IsDigit).ToArray());
-            var CurrentVersionSanitized = new string(CurrentVersion.Split('.').First().Where(char.IsDigit).ToArray());
+            var LatestVersionSanitized = double.Parse(LatestVersion);
+            var CurrentVersionSanitized = double.Parse(CurrentVersion);
 
-            if (!forceUpdate && LatestVersionSanitized == CurrentVersionSanitized) return false;
+            if (!forceUpdate && CurrentVersionSanitized >= LatestVersionSanitized) return false;
 
             foreach (string CurrentDownloadURL in DownloadURLs)
             {
@@ -137,8 +143,7 @@ namespace TMech.Utils
                     Method = HttpMethod.Get
                 };
 
-                var CancellationTokenSource = new CancellationTokenSource(30000);
-                HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
+                HttpResponseMessage Response = HttpClient.Send(Request);
 
                 long? Downloadsize = Response.Content.Headers.ContentLength;
                 Debug.Assert(Downloadsize is not null && Downloadsize > 0);

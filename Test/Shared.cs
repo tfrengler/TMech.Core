@@ -239,6 +239,8 @@ public class GlobalSetup
     public static int FetchContextTimeoutMinus1Sec { get; } = 4000;
     public static readonly FileInfo ChromeLocation = new FileInfo(@"C:\Temp\Chromium\chrome.exe");
     public static readonly FileInfo ChromeDriverLocation = new FileInfo(@"C:\Temp\Chromium\chromedriver.exe");
+    public static DirectoryInfo FirefoxTempInstallLocation = new DirectoryInfo("C:/Temp/Firefox_Test");
+    public static DirectoryInfo ChromeTempInstallLocation = new DirectoryInfo("C:/Temp/Chrome_Test");
 
     [OneTimeSetUp]
     public void BeforeAll()

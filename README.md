@@ -7,13 +7,13 @@ Almost everything is covered by functional regression tests so that I can (reaso
 ## CONTENTS:
 
 It consists of these bits:
-1. ChromeProvider
+1. ChromeProvider and FirefoxProvider
 2. Locator
 3. WebdriverContext
 4. FetchContext
 ## 1: ChromeProvider
 
-A tool that can auto-download **Chrome for Testing** for you. This was created so that we could automatically keep a local Chrome-browser (and its webdriver binary) up to date for testing against. It's cross-platform and works on Win, Linux and Mac (only for 64-bit).
+Tools that can auto-download **Chrome for Testing** or **Firefox** for you. This was created so that we could automatically keep a local browser (and its webdriver binary) up to date for testing against. It's cross-platform and works on Win and Linux (only for 64-bit).
 ## 2: Locator
 
 A simple static class with static methods for constructing frequently used locators such as *element id ends with x* or *element text contains x* etc.

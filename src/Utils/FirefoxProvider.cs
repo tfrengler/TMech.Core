@@ -1,5 +1,4 @@
-﻿using OpenQA.Selenium;
-using SharpCompress.Archives;
+﻿using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Compressors.BZip2;
 using SharpCompress.Readers;
@@ -12,22 +11,18 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-/* https://www.7-zip.org/sdk.html
- * https://ironpdf.com/blog/net-help/sevenzip-csharp-guide/
- * https://learn.microsoft.com/en-us/dotnet/api/system.formats.tar?view=net-8.0
- */
-
 namespace TMech.Core.Utils
 {
     /// <summary>
-    /// <para>Utility that allows you to maintain the latest test version of Firefox in a directory of your choice. This service handles checking versions as well as downloading, and extrating the latest stable release.</para>
-    /// <para>To learn more about Firefox for automation testing see here: https://googleFirefoxlabs.github.io/Firefox-for-testing/</para>
+    /// <para>A service that allows you to maintain the latest <b>stable</b> version of Firefox for <c>Windows 64-bit</c> and <c>Linux 64-bit</c> in a directory of your choice. It handles checking versions as well as downloading, and extracting the latest release.</para>
+    /// <para>To learn more about Firefox for automation testing <see href="https://googleFirefoxlabs.github.io/Firefox-for-testing/">here</see>.</para>
     /// </summary>
     public sealed class FirefoxProvider : IDisposable
     {
@@ -37,7 +32,7 @@ namespace TMech.Core.Utils
         private bool IsDisposed;
         private const string BrowserVersionFileName = "BROWSER_VERSION";
         private const string DriverVersionFileName = "DRIVER_VERSION";
-        private const UnixFileMode FilePermissions = UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.UserRead | UnixFileMode.GroupRead;
+        private const UnixFileMode UnixFilePermissions = UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.UserRead | UnixFileMode.GroupRead;
 
         #region Github data structures
 
@@ -71,12 +66,17 @@ namespace TMech.Core.Utils
         /// <summary>Sets or gets the timeouts for requests as well as downloading data. Defaults to 30 seconds.</summary>
         public TimeSpan RequestTimeout { get => HttpClient.Timeout; set => HttpClient.Timeout = value; }
 
+        /// <summary>
+        /// Creates a new instance of <see cref="FirefoxProvider"/> that can be used to maintain a standalone Firefox browser and webdriver for testing.
+        /// </summary>
+        /// <param name="installLocation">The folder where Firefox and the webdriver will be kept. Must exist or else an exception will be thrown.</param>
+        /// <exception cref="DirectoryNotFoundException"></exception>
         public FirefoxProvider(DirectoryInfo installLocation)
         {
-            Debug.Assert(installLocation != null);
+            ArgumentNullException.ThrowIfNull(installLocation);
             InstallLocation = installLocation;
 
-            if (!InstallLocation.Exists) throw new DirectoryNotFoundException("Firefox install directory does not exist: " + InstallLocation.FullName);
+            if (!InstallLocation.Exists) throw new DirectoryNotFoundException("Install directory does not exist: " + InstallLocation.FullName);
             HttpClient = new HttpClient(new HttpClientHandler() { AllowAutoRedirect = false })
             {
                 Timeout = TimeSpan.FromSeconds(30.0d)
@@ -100,8 +100,9 @@ namespace TMech.Core.Utils
         }
 
         /// <summary>
-        /// Retrieves the version of Firefox currently installed in <see cref="InstallLocation"/>. If Firefox cannot be found (the version file) then an empty string is returned.
+        /// Retrieves the version of Firefox currently installed in <see cref="InstallLocation"/>.
         /// </summary>
+        /// <returns>A string representing the version of Firefox currently installed <i>or</i> if Firefox cannot be found - the version file - then an empty string is returned.</returns>
         public string GetCurrentInstalledBrowserVersion()
         {
             var VersionFile = new FileInfo(Path.Combine(InstallLocation.FullName, BrowserVersionFileName));
@@ -111,8 +112,9 @@ namespace TMech.Core.Utils
         }
 
         /// <summary>
-        /// Retrieves the version of Firefox currently installed in <see cref="InstallLocation"/>. If Firefox cannot be found (the version file) then an empty string is returned.
+        /// Retrieves the version of the webdriver currently installed in <see cref="InstallLocation"/>.
         /// </summary>
+        /// <returns>A string representing the version of the webdriver currently installed <i>or</i> if the webdriver cannot be found - the version file - then an empty string is returned.</returns>
         public string GetCurrentInstalledDriverVersion()
         {
             var VersionFile = new FileInfo(Path.Combine(InstallLocation.FullName, DriverVersionFileName));
@@ -122,35 +124,35 @@ namespace TMech.Core.Utils
         }
 
         /// <summary>
-        /// Retrieves the latest available version of Firefox online.
+        /// Returns the latest <b>stable</b> version of Firefox that is available online.
         /// </summary>
-        public string GetLatestAvailableBrowserVersion(OSPlatform platform)
+        public string GetLatestAvailableBrowserVersion(Platform platform)
         {
             return GetBrowserVersionAndDownloadURL(platform).ReadableVersion;
         }
 
         /// <summary>
-        /// Retrieves the latest available version of Firefox online.
+        /// Returns the latest <b>stable</b> version of Firefox that is available online.
         /// </summary>
-        public string GetLatestAvailableDriverVersion(OSPlatform platform)
+        public string GetLatestAvailableDriverVersion(Platform platform)
         {
             return GetDriverVersionAndDownloadURL(platform).ReadableVersion;
         }
 
         /// <summary>
-        /// <para>Downloads and extracts Firefox and its corresponding webdriver into <see cref="InstallLocation"/> if the currently installed version is lower than the latest available version OR if Firefox is not installed. Only major revisions are counted when factoring in version differences.</para>
-        /// NOTE: If there is a currently installed version of Firefox it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
+        /// <para>Downloads and extracts Firefox into <see cref="InstallLocation"/> if the currently installed version is lower than the latest available version <i>or</i> if Firefox is not installed.</para>
+        /// <b>NOTE:</b> If there is already a version of Firefox in <see cref="InstallLocation"/> it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
         /// </summary>
-        /// <param name="forceUpdate">Whether to force a download and install of Firefox even if the installed version is already the newest.</param>
-        /// <returns><see langword="true"/> if Firefox was downloaded and installed, <see langword="false"/> otherwise</returns>
-        public bool DownloadLatestBrowserVersion(OSPlatform platform, bool forceUpdate = false)
+        /// <param name="force">Whether to force Firefox to be downloaded and installed even if the installed version is already the newest.</param>
+        /// <returns><see langword="true"/> if Firefox was downloaded and installed, <see langword="false"/> otherwise.</returns>
+        public bool DownloadLatestBrowserVersion(Platform platform, bool force = false)
         {
             BinaryDownloadAssetData DownloadAssetData = GetBrowserVersionAndDownloadURL(platform);
             string CurrentVersion = GetCurrentInstalledBrowserVersion();
 
             double CurrentVersionComparable = ParseVersionString(CurrentVersion);
 
-            if (!forceUpdate && CurrentVersionComparable >= DownloadAssetData.ComparableVersion) return false;
+            if (!force && CurrentVersionComparable >= DownloadAssetData.ComparableVersion) return false;
 
             var Request = new HttpRequestMessage()
             {
@@ -159,23 +161,37 @@ namespace TMech.Core.Utils
             };
 
             HttpResponseMessage Response = HttpClient.Send(Request);
+            Response.EnsureSuccessStatusCode();
+
+            string? ContentType = Response.Content.Headers.ContentType is null ? string.Empty : Response.Content.Headers.ContentType?.MediaType;
+
+            if (ContentType is null || (ContentType is not null && !ContentType.Equals("application/x-msdos-program", StringComparison.InvariantCulture)))
+            {
+                throw new InvalidDataException($"A call to download the latest version of Firefox returned a response with 'Content-Type' not 'application/x-msdos-program' but rather '{ContentType}' (URL: {DownloadAssetData.DownloadUri})");
+            }
 
             long? Downloadsize = Response.Content.Headers.ContentLength;
-            Debug.Assert(Downloadsize is not null && Downloadsize > 0);
+            if (Downloadsize is null)
+            {
+                throw new InvalidDataException($"A call to download the latest version of Firefox returned a response with 'Content-Length' not defined (URL: {DownloadAssetData.DownloadUri})");
+            }
 
-            var Buffer = new MemoryStream(Convert.ToInt32(Downloadsize));
-            Response.Content.ReadAsStream().CopyTo(Buffer);
+            var ResponseContentBuffer = new MemoryStream(Convert.ToInt32(Downloadsize));
+            Response.Content.ReadAsStream().CopyTo(ResponseContentBuffer);
             Response.Dispose();
-            Buffer.Position = 0;
+            ResponseContentBuffer.Position = 0;
 
             switch (platform)
             {
-                case var x when x == OSPlatform.Windows:
-                    ExtractWin64BrowserToInstallLocation(Buffer);
+                case Platform.Win64:
+                    ExtractWin64BrowserToInstallLocation(ResponseContentBuffer);
                     break;
-                case var x when x == OSPlatform.Linux:
-                    ExtractLinux64BrowserToInstallLocation(Buffer);
+                case Platform.Linux64:
+                    ExtractLinux64BrowserToInstallLocation(ResponseContentBuffer);
                     break;
+
+                default:
+                    throw new InvalidDataException($"Argument '{nameof(platform)}' does not have a valid value: " + platform);
             }
 
             File.WriteAllText(Path.Combine(InstallLocation.FullName, BrowserVersionFileName), DownloadAssetData.ReadableVersion);
@@ -183,69 +199,190 @@ namespace TMech.Core.Utils
             return true;
         }
 
+        /// <summary>
+        /// <para>Downloads and extracts Firefox's webdriver into <see cref="InstallLocation"/> if the currently installed version is lower than the latest available version <i>or</i> if the webdriver is not installed.</para>
+        /// <b>NOTE:</b> If there is already a version of the webdriver in <see cref="InstallLocation"/> it will be overwritten.
+        /// </summary>
+        /// <param name="force">Whether to force the webdriver to be downloaded and installed even if the installed version is already the newest.</param>
+        /// <returns><see langword="true"/> if the webdriver was downloaded and installed, <see langword="false"/> otherwise.</returns>
+        public bool DownloadLatestDriverVersion(Platform platform, bool force = false)
+        {
+            BinaryDownloadAssetData DownloadAssetData = GetDriverVersionAndDownloadURL(platform);
+            string CurrentVersion = GetCurrentInstalledDriverVersion();
+
+            double CurrentVersionComparable = ParseVersionString(CurrentVersion);
+
+            if (!force && CurrentVersionComparable >= DownloadAssetData.ComparableVersion) return false;
+
+            var Request = new HttpRequestMessage()
+            {
+                RequestUri = DownloadAssetData.DownloadUri,
+                Method = HttpMethod.Get
+            };
+
+            HttpResponseMessage Response = HttpClient.Send(Request);
+            if (Response.StatusCode != System.Net.HttpStatusCode.Redirect)
+            {
+                throw new InvalidDataException($"A call to download the latest webdriver returned a response with a status code not '302' but rather '{Response.StatusCode}' (URL: {DownloadAssetData.DownloadUri})");
+            }
+
+            Uri? DownloadUri = Response.Headers.Location;
+            if (DownloadUri is null)
+            {
+                throw new InvalidDataException($"A call to download the latest webdriver returned a response with an empty 'Location'-header (URL: {DownloadAssetData.DownloadUri})");
+            }
+            Response.Dispose();
+
+            Request = new HttpRequestMessage()
+            {
+                RequestUri = DownloadUri,
+                Method = HttpMethod.Get
+            };
+
+            Response = HttpClient.Send(Request);
+            Response.EnsureSuccessStatusCode();
+
+            string? ContentType = Response.Content.Headers.ContentType is null ? string.Empty : Response.Content.Headers.ContentType?.MediaType;
+
+            if (ContentType is null || (ContentType is not null && !ContentType.Equals("application/octet-stream", StringComparison.InvariantCulture)))
+            {
+                throw new InvalidDataException($"A call to download the latest webdriver returned a response with 'Content-Type'-header not being 'application/octet-stream' but rather '{ContentType}' (URL: {DownloadAssetData.DownloadUri})");
+            }
+
+            long? Downloadsize = Response.Content.Headers.ContentLength;
+            if (Downloadsize is null)
+            {
+                throw new InvalidDataException($"A call to download the latest webdriver returned a response with 'Content-Length' not defined (URL: {DownloadAssetData.DownloadUri})");
+            }
+
+            var ResponseContentBuffer = new MemoryStream(Convert.ToInt32(Downloadsize));
+            Response.Content.ReadAsStream().CopyTo(ResponseContentBuffer);
+            Response.Dispose();
+            ResponseContentBuffer.Position = 0;
+
+            switch (platform)
+            {
+                case Platform.Win64:
+                    ZipFile.ExtractToDirectory(ResponseContentBuffer, InstallLocation.FullName, true);
+                    break;
+
+                case Platform.Linux64:
+                    ExtractLinux64DriverToInstallLocation(ResponseContentBuffer);
+                    break;
+
+                default:
+                    throw new InvalidDataException($"Argument '{nameof(platform)}' does not have a valid value: " + platform);
+            }
+
+            File.WriteAllText(Path.Combine(InstallLocation.FullName, DriverVersionFileName), DownloadAssetData.ReadableVersion);
+
+            return true;
+        }
+
+        #region PRIVATE
+
+        // Geckodriver's version format has historially always been "v0.00.0"
+        private static double ParseVersionString(string input) => input.Length == 0 ? 0.0d : double.Parse(input.TrimStart('v'));
+
+        private void ExtractLinux64DriverToInstallLocation(MemoryStream driverArchiveStream)
+        {
+            using (var GZipStream = new GZipStream(driverArchiveStream, CompressionMode.Decompress))
+            {
+                TarFile.ExtractToDirectory(GZipStream, InstallLocation.FullName, true);
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "geckodriver"), UnixFilePermissions);
+            }
+        }
+
         private void ExtractWin64BrowserToInstallLocation(MemoryStream browserArchiveStream)
         {
-            IReader? Reader = null;
-            MemoryStream Buffer = ExtractArchiveFromWinInstaller(browserArchiveStream);
+            MemoryStream ArchiveBuffer = ExtractArchiveFromWinInstaller(browserArchiveStream);
 
-            try
+            IArchive Archive = ArchiveFactory.Open(ArchiveBuffer);
+            using IReader Reader = Archive.ExtractAllEntries();
+            var Options = new ExtractionOptions() { ExtractFullPath = true, Overwrite = true };
+
+            const string WindowsArchiveDirectoryPrefix = "core/";
+
+            while (Reader.MoveToNextEntry())
             {
-                IArchive Archive = ArchiveFactory.Open(Buffer);
-                Reader = Archive.ExtractAllEntries();
-                var Options = new ExtractionOptions() { ExtractFullPath = true, Overwrite = true };
+                if (Reader.Entry.IsDirectory) continue;
+                if (!Reader.Entry.Key.StartsWith("core/")) continue;
 
-                const string WindowsArchiveDirectoryPrefix = "core/";
+                string SanitizedName = Reader.Entry.Key.Replace(WindowsArchiveDirectoryPrefix, "");
 
-                while (Reader.MoveToNextEntry())
-                {
-                    if (Reader.Entry.IsDirectory) continue;
-                    if (!Reader.Entry.Key.StartsWith("core/")) continue;
+                string FinalName = Path.Combine(InstallLocation.FullName, SanitizedName);
+                Debug.Assert(!string.IsNullOrWhiteSpace(FinalName));
 
-                    string SanitizedName = Reader.Entry.Key.Replace(WindowsArchiveDirectoryPrefix, "").TrimStart('/');
-
-                    string FinalName = Path.Combine(InstallLocation.FullName, SanitizedName);
-                    Debug.Assert(!string.IsNullOrWhiteSpace(FinalName));
-
-                    new FileInfo(FinalName).Directory?.Create();
-                    Reader.WriteEntryToFile(FinalName, Options);
-                }
+                new FileInfo(FinalName).Directory?.Create();
+                Reader.WriteEntryToFile(FinalName, Options);
             }
-            finally
-            {
-                Reader?.Dispose();
-            }
+
+            File.Delete(Path.Combine(InstallLocation.FullName, "updater.exe"));
         }
 
         private void ExtractLinux64BrowserToInstallLocation(MemoryStream browserArchiveStream)
         {
             using (var BZ2Stream = new BZip2Stream(browserArchiveStream, SharpCompress.Compressors.CompressionMode.Decompress, false))
             {
-                TarFile.ExtractToDirectory(BZ2Stream, InstallLocation.FullName, true);
+                var DirectoryPrefixRegex = new Regex("^firefox/");
+                using var ArchiveReader = new TarReader(BZ2Stream, false);
+                TarEntry? CurrentEntry = ArchiveReader.GetNextEntry();
+
+                while (CurrentEntry is not null)
+                {
+                    FileInfo FileDestination = new FileInfo(Path.Combine(InstallLocation.FullName, DirectoryPrefixRegex.Replace(CurrentEntry.Name, "")));
+                    FileDestination.Directory?.Create();
+
+                    CurrentEntry.ExtractToFile(FileDestination.FullName, true);
+                    CurrentEntry = ArchiveReader.GetNextEntry();
+                }
+            }
+
+            File.Delete(Path.Combine(InstallLocation.FullName, "updater"));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "firefox"), UnixFilePermissions);
+                File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "crashreporter"), UnixFilePermissions);
             }
         }
 
-        private BinaryDownloadAssetData GetBrowserVersionAndDownloadURL(OSPlatform platform)
+        private BinaryDownloadAssetData GetBrowserVersionAndDownloadURL(Platform platform)
         {
             string PlatformName = platform switch
             {
-                var x when x == OSPlatform.Windows => "win64",
-                var x when x == OSPlatform.Linux => "linux64",
-                var x when x == OSPlatform.OSX => "osx",
-                _ => throw new PlatformNotSupportedException("Only Win, Linux and Mac platforms are supported")
+                Platform.Win64 => "win64",
+                Platform.Linux64 => "linux64",
+                _ => throw new InvalidDataException($"Argument '{nameof(platform)}' does not have a valid value: " + platform)
             };
 
-            var Request = new HttpRequestMessage(HttpMethod.Head, new Uri($"https://download.mozilla.org/?product=firefox-latest&os={PlatformName}&lang=en-US"));
+            var OriginalDownloadUri = new Uri($"https://download.mozilla.org/?product=firefox-latest&os={PlatformName}&lang=en-US");
+            var Request = new HttpRequestMessage(HttpMethod.Head, OriginalDownloadUri);
             var Response = HttpClient.Send(Request, HttpCompletionOption.ResponseHeadersRead);
 
-            Debug.Assert(Response.StatusCode == System.Net.HttpStatusCode.Redirect);
-            Debug.Assert(Response.Headers.Location is not null);
-            Uri DownloadUri = Response.Headers.Location;
+            if (Response.StatusCode != System.Net.HttpStatusCode.Redirect)
+            {
+                throw new InvalidDataException($"A GET call to determine the latest browser version returned a response with a status code not '302' but rather '{Response.StatusCode}' (URL: {OriginalDownloadUri})");
+            }
+
+            Uri? DownloadUri = Response.Headers.Location;
+            if (DownloadUri is null)
+            {
+                throw new InvalidDataException($"A GET call to determine the latest browser version returned a response with an empty 'Location'-header (URL: {OriginalDownloadUri})");
+            }
 
             var VersionCapture = new Regex("releases/(.+?)/").Match(DownloadUri.ToString());
             Debug.Assert(VersionCapture.Success && VersionCapture.Groups.Count > 1);
 
-            string VersionString = VersionCapture.Groups[1].Value;
-            Debug.Assert(!string.IsNullOrWhiteSpace(VersionString));
+            string VersionString = VersionCapture.Groups[1].Value.Trim();
+            if (VersionString.Length == 0)
+            {
+                throw new InvalidDataException($"Trying to determine the latest browser version from the redirect-url failed. Expected a parsed version string, but got an empty string instead (URL: {DownloadUri})");
+            }
 
             return new BinaryDownloadAssetData()
             {
@@ -255,38 +392,48 @@ namespace TMech.Core.Utils
             };
         }
 
-        private static double ParseVersionString(string input) => input.Trim().Length == 0 ? 0.0d : double.Parse(input.TrimStart('v'));
-
-        private BinaryDownloadAssetData GetDriverVersionAndDownloadURL(OSPlatform platform)
+        private BinaryDownloadAssetData GetDriverVersionAndDownloadURL(Platform platform)
         {
             string DriverFileNameFragment = platform switch
             {
-                var x when x == OSPlatform.Windows => "win64.zip",
-                var x when x == OSPlatform.Linux => "linux64.tar.gz",
-                var x when x == OSPlatform.OSX => "macos.tar.gz",
-                _ => throw new PlatformNotSupportedException("Only Win, Linux and Mac platforms are supported")
+                Platform.Win64 => "win64.zip",
+                Platform.Linux64 => "linux64.tar.gz",
+                _ => throw new InvalidDataException()
             };
 
-            var Request = new HttpRequestMessage(HttpMethod.Get, new Uri("https://api.github.com/repos/mozilla/geckodriver/releases"));
+            var WebdriverGithubReleasesUri = new Uri("https://api.github.com/repos/mozilla/geckodriver/releases");
+            var Request = new HttpRequestMessage(HttpMethod.Get, WebdriverGithubReleasesUri);
             var Response = HttpClient.Send(Request);
-
             Response.EnsureSuccessStatusCode();
+
             string JsonResponseContent = Response.Content.ReadAsStringAsync().GetAwaiter().GetResult().Trim();
-            Debug.Assert(JsonResponseContent.Length > 0);
+            if (JsonResponseContent.Length == 0)
+            {
+                throw new InvalidDataException($"A GET call to determine the latest webdriver version returned a response with an empty body (URL: {WebdriverGithubReleasesUri})");
+            }
 
             GithubApiRelease[]? GithubResponseData = JsonSerializer.Deserialize<GithubApiRelease[]>(JsonResponseContent);
-            Debug.Assert(GithubResponseData is not null);
+            if (GithubResponseData is null || (GithubResponseData is not null && GithubResponseData.Length == 0))
+            {
+                throw new InvalidDataException($"When deserializing the response JSON from a call to determine the latest webdriver version we got null or empty object (URL: {WebdriverGithubReleasesUri})");
+            }
 
-            Tuple<double, string>[] Versions = new Tuple<double, string>[GithubResponseData.Length];
+            Tuple<double, string>[] Versions = new Tuple<double, string>[GithubResponseData!.Length];
             Dictionary<string, GithubApiAsset[]> VersionWithAssetsManifest = new Dictionary<string, GithubApiAsset[]>(GithubResponseData.Length);
 
             for (int Index = 0; Index < GithubResponseData.Length; Index++)
             {
                 string VersionString = GithubResponseData[Index].TagName;
+                double ParsedVersion = ParseVersionString(VersionString);
+
+                if (ParsedVersion == 0.0d)
+                {
+                    throw new InvalidDataException($"When parsed the response JSON from a call to determine the latest webdriver version we got 0.0d as a parsed version number (GithubApiRelease.TagName) (URL: {WebdriverGithubReleasesUri})");
+                }
 
                 var NewEntry = new Tuple<double, string>
                 (
-                    ParseVersionString(VersionString),
+                    ParsedVersion,
                     VersionString
                 );
 
@@ -325,7 +472,7 @@ namespace TMech.Core.Utils
                 int BytesRead = setupBinaryStream.Read(Buffer);
                 if (BytesRead == 0)
                 {
-                    throw new InvalidOperationException("Win installer end of stream reached. Expected to find magic marker signifying the end of a 7zsfx installer");
+                    throw new InvalidOperationException("Reached the end of the Firefox Win64 installer. Expected to find magic marker signifying the end of a 7zsfx installer somewhere in the binary.");
                 }
 
                 int FoundAt = Encoding.UTF8.GetString(Buffer).IndexOf(MagicWord);
@@ -347,6 +494,8 @@ namespace TMech.Core.Utils
 
             return new MemoryStream(ArchiveBuffer);
         }
+
+        #endregion
 
         #region Destructors
 

@@ -117,7 +117,7 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// <para>Downloads and extracts <b>Chrome for Testing</b> 64-bit and its corresponding webdriver from the <b>stable</b>-branch into <see cref="InstallLocation"/> for a given platform. It does this only if the currently installed version is lower than the latest available version <i>OR</i> if it is not installed at all. Only <b>major revisions</b> are counted when factoring in version differences.</para>
+        /// <para>Downloads and extracts <b>Chrome for Testing</b> 64-bit and its corresponding webdriver from the <b>stable</b>-branch into <see cref="InstallLocation"/> for a given platform. It does this only if the currently installed version is lower than the latest available version <i>OR</i> if it is not installed at all.</para>
         /// <b>NOTE:</b> If there is a currently installed version of Chrome it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
         /// </summary>
         /// <param name="platform">The OS platform to download Chrome for. Only <c>Windows</c>, <c>Linux</c> and <c>Mac</c>.</param>
@@ -179,7 +179,7 @@ namespace TMech.Utils
                 }
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "chrome"), UnixFilePermissions);
                 File.SetUnixFileMode(Path.Combine(InstallLocation.FullName, "chrome_crashpad_handler"), UnixFilePermissions);

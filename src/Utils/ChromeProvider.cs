@@ -15,7 +15,7 @@ using System.Threading;
 namespace TMech.Utils
 {
     /// <summary>
-    /// <para>Utility that allows you to maintain the latest version of <b>Chrome for Testing</b> in a directory of your choice. This service handles checking versions as well as downloading, and extracting the latest stable release.</para>
+    /// <para>A service that allows you to maintain the latest <b>stable</b> version of <b>Chrome for Testing</b> for <c>Windows 64-bit</c> and <c>Linux 64-bit</c> in a directory of your choice. It handles checking versions as well as downloading, and extracting the latest release.</para>
     /// <para>To learn more about Chrome for automation testing see <see href="https://googlechromelabs.github.io/chrome-for-testing/">here</see>.</para>
     /// </summary>
     public sealed class ChromeProvider : IDisposable
@@ -69,6 +69,10 @@ namespace TMech.Utils
         /// <summary>Sets or gets the timeouts for requests as well as downloading data. Defaults to 30 seconds.</summary>
         public TimeSpan RequestTimeout { get => HttpClient.Timeout; set => HttpClient.Timeout = value; }
 
+        /// <summary>
+        /// Creates a new instance of <see cref="ChromeProvider"/> that can be used to maintain a standalone Chrome browser and webdriver for testing.
+        /// </summary>
+        /// <param name="installLocation">The folder where Chrome and the webdriver will be kept. Must exist or else an exception will be thrown.</param>
         public ChromeProvider(DirectoryInfo installLocation)
         {
             Debug.Assert(installLocation != null);
@@ -98,8 +102,9 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// Retrieves the version of Chrome currently installed in <see cref="InstallLocation"/>. If Chrome cannot be found (the version file) then an empty string is returned.
+        /// Retrieves the version of Chrome currently installed in <see cref="InstallLocation"/>.
         /// </summary>
+        /// <returns>A string representing the version of Chrome currently installed <i>or</i> if Chrome cannot be found - the version file - then an empty string is returned.</returns>
         public string GetCurrentInstalledVersion()
         {
             var VersionFile = new FileInfo(Path.Combine(InstallLocation.FullName, VersionFileName));
@@ -109,44 +114,59 @@ namespace TMech.Utils
         }
 
         /// <summary>
-        /// Retrieves the latest available version of Chrome online for a given platform.
+        /// Returns the latest <b>stable</b> version of Chrome that is available online.
         /// </summary>
-        public string GetLatestAvailableVersion(OSPlatform platform)
+        public string GetLatestAvailableVersion(Platform platform)
         {
-            return GetVersionAndDownloadURLs(platform).Item1;
+            return GetBinaryAssetData(platform)[0].ReadableVersion;
         }
 
         /// <summary>
-        /// <para>Downloads and extracts <b>Chrome for Testing</b> 64-bit and its corresponding webdriver from the <b>stable</b>-branch into <see cref="InstallLocation"/> for a given platform. It does this only if the currently installed version is lower than the latest available version <i>OR</i> if it is not installed at all.</para>
-        /// <b>NOTE:</b> If there is a currently installed version of Chrome it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
+        /// <para>Downloads and extracts Chrome and its webdriver (their versions always match each other) into <see cref="InstallLocation"/> if the currently installed version is lower than the latest available version <i>or</i> if Chrome is not installed.</para>
+        /// <b>NOTE:</b> If there is already a version of Chrome in <see cref="InstallLocation"/> it will not be removed first! Existing files will merely be overwritten. This might leave certain version-specific files behind.
         /// </summary>
-        /// <param name="platform">The OS platform to download Chrome for. Only <c>Windows</c>, <c>Linux</c> and <c>Mac</c>.</param>
-        /// <param name="skipDriver">If <see langword="true"/> then only the browser will be installed, skipping the webdriver. If there is an existing webdriver binary it will not be deleted though.</param>
-        /// <param name="forceUpdate">Whether to force a download and install Chrome even if the installed version is already the newest. Effectively a reinstall.</param>
-        /// <returns><see langword="true"/> if Chrome was downloaded and installed, <see langword="false"/> otherwise</returns>
-        public bool DownloadLatestVersion(OSPlatform platform, bool skipDriver = false, bool forceUpdate = false)
+        /// <param name="force">Whether to force Chrome to be downloaded and installed even if the installed version is already the newest.</param>
+        /// <returns><see langword="true"/> if Chrome was downloaded and installed, <see langword="false"/> otherwise.</returns>
+        public bool DownloadLatestVersion(Platform platform, bool skipDriver = false, bool force = false)
         {
-            (string LatestVersion, string ChromeURL, string ChromedriverURL) = GetVersionAndDownloadURLs(platform);
-            string[] DownloadURLs = skipDriver ? new string[] { ChromeURL } : new string[] { ChromeURL, ChromedriverURL };
-            string CurrentVersion = GetCurrentInstalledVersion();
+            BinaryDownloadAssetData[] AssetData = GetBinaryAssetData(platform);
+            Debug.Assert(AssetData.Length is not 0);
 
-            var LatestVersionSanitized = double.Parse(LatestVersion);
-            var CurrentVersionSanitized = double.Parse(CurrentVersion);
+            Uri[] DownloadURLs = skipDriver ? new Uri[] { AssetData[0].DownloadUri } : new Uri[] { AssetData[0].DownloadUri, AssetData[1].DownloadUri };
+            Version CurrentParsedVersion = Version.FromString(GetCurrentInstalledVersion());
 
-            if (!forceUpdate && CurrentVersionSanitized >= LatestVersionSanitized) return false;
+            if (!force && CurrentParsedVersion.CompareTo(AssetData[0].Version) >= 0) return false;
 
-            foreach (string CurrentDownloadURL in DownloadURLs)
+            string ExpectedMimeType = platform switch
+            {
+                Platform.Win64 => "application/x-zip-compressed",
+                Platform.Linux64 => "application/zip",
+                _ => throw new InvalidDataException("I'm here to satisfy the compiler because this is already handled in the call to GetBrowserVersionAndDownloadURL...")
+            };
+
+            foreach (Uri CurrentDownloadURL in DownloadURLs)
             {
                 var Request = new HttpRequestMessage()
                 {
-                    RequestUri = new Uri(CurrentDownloadURL),
+                    RequestUri = CurrentDownloadURL,
                     Method = HttpMethod.Get
                 };
 
                 HttpResponseMessage Response = HttpClient.Send(Request);
+                Response.EnsureSuccessStatusCode();
+
+                string? ContentType = Response.Content.Headers.ContentType is null ? string.Empty : Response.Content.Headers.ContentType?.MediaType;
+
+                if (ContentType is null || (ContentType is not null && !ContentType.Equals(ExpectedMimeType, StringComparison.InvariantCulture)))
+                {
+                    throw new InvalidDataException($"A call to download the latest version of Chrome or its webdriver returned a response with 'Content-Type' not '{ExpectedMimeType}' but rather '{ContentType}' (URL: {CurrentDownloadURL})");
+                }
 
                 long? Downloadsize = Response.Content.Headers.ContentLength;
-                Debug.Assert(Downloadsize is not null && Downloadsize > 0);
+                if (Downloadsize is null)
+                {
+                    throw new InvalidDataException($"A call to download the latest version of Chrome or its webdriver returned a response with 'Content-Length' not defined (URL: {CurrentDownloadURL})");
+                }
 
                 var Buffer = new MemoryStream(Convert.ToInt32(Downloadsize));
                 Response.Content.ReadAsStream().CopyTo(Buffer);
@@ -162,13 +182,16 @@ namespace TMech.Utils
 
                     while (Reader.MoveToNextEntry())
                     {
-                        string RootDir = Reader.Entry.Key.Split('/').First();
-                        string SanitizedName = Reader.Entry.Key.Replace(RootDir, "").TrimStart('/');
+                        string? RootDir = Reader.Entry.Key?.Split('/').First();
+                        Debug.Assert(RootDir is not null);
+                        string? SanitizedName = Reader.Entry.Key?.Replace(RootDir, "").TrimStart('/');
+                        Debug.Assert(SanitizedName is not null);
 
                         if (Reader.Entry.IsDirectory) continue;
 
                         string FinalName = Path.Combine(InstallLocation.FullName, SanitizedName);
                         Debug.Assert(!string.IsNullOrWhiteSpace(FinalName));
+
                         new FileInfo(FinalName).Directory?.Create();
                         Reader.WriteEntryToFile(FinalName, Options);
                     }
@@ -190,19 +213,19 @@ namespace TMech.Utils
                 }
             }
 
-            File.WriteAllText(Path.Combine(InstallLocation.FullName, VersionFileName), LatestVersion);
+            File.WriteAllText(Path.Combine(InstallLocation.FullName, VersionFileName), AssetData[0].ReadableVersion);
 
             return true;
         }
 
-        private Tuple<string, string, string> GetVersionAndDownloadURLs(OSPlatform platform)
+        // Index 0 is browser, index 1 is driver
+        private BinaryDownloadAssetData[] GetBinaryAssetData(Platform platform)
         {
             string PlatformName = platform switch
             {
-                var x when x == OSPlatform.Windows => "win64",
-                var x when x == OSPlatform.Linux => "linux64",
-                var x when x == OSPlatform.OSX => "mac-x64",
-                _ => throw new PlatformNotSupportedException("Only Win, Linux and Mac platforms are supported")
+                Platform.Win64 => "win64",
+                Platform.Linux64 => "linux64",
+                _ => throw new InvalidDataException($"Argument '{nameof(platform)}' does not have a valid value: " + platform)
             };
 
             var Request = new HttpRequestMessage()
@@ -212,12 +235,11 @@ namespace TMech.Utils
             };
 
             Request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            Request.Headers.UserAgent.Add(new ProductInfoHeaderValue("ChromeProvider.API.Service", "1.0"));
+            HttpResponseMessage Response = HttpClient.Send(Request);
+            Response.EnsureSuccessStatusCode();
 
-            var CancellationTokenSource = new CancellationTokenSource(10000);
-            HttpResponseMessage Response = HttpClient.SendAsync(Request, CancellationTokenSource.Token).GetAwaiter().GetResult();
-
-            string ResponseContent = Response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var Timeout = new CancellationTokenSource(HttpClient.Timeout.Milliseconds);
+            string ResponseContent = Response.Content.ReadAsStringAsync(Timeout.Token).GetAwaiter().GetResult();
             Response.Dispose();
 
             Manifest? ReleaseData;
@@ -227,16 +249,36 @@ namespace TMech.Utils
             }
             catch (JsonException error)
             {
-                throw new JsonException("Failed to deserialize GitHub response as JSON:" + Environment.NewLine + ResponseContent, error);
+                throw new JsonException($"Error when trying to determine latest available Chrome version online. Failed to deserialize GitHub response as JSON ({ManifestURL})", error);
             }
 
             Debug.Assert(ReleaseData is not null);
+
+            string VersionString = ReleaseData.Channels.Stable.Version;
+            Version ParsedVersion = Version.FromString(VersionString);
             var ChromeUrl = ReleaseData.Channels.Stable.Downloads.Chrome.Single(current => current.Platform == PlatformName).Url;
             var ChromedriverUrl = ReleaseData.Channels.Stable.Downloads.Chromedriver.Single(current => current.Platform == PlatformName).Url;
 
-            return new Tuple<string, string, string>(ReleaseData.Channels.Stable.Version, ChromeUrl, ChromedriverUrl);
+            return new BinaryDownloadAssetData[]
+            {
+                new BinaryDownloadAssetData()
+                {
+                    ReadableVersion = VersionString,
+                    Version = ParsedVersion,
+                    DownloadUri = new Uri(ChromeUrl)
+                },
+                new BinaryDownloadAssetData()
+                {
+                    ReadableVersion = VersionString,
+                    Version = ParsedVersion,
+                    DownloadUri = new Uri(ChromedriverUrl)
+                }
+            };
         }
 
+        /// <summary>
+        /// Releases all potentially open http connections used by this instance.
+        /// </summary>
         public void Dispose()
         {
             if (IsDisposed) return;
@@ -251,4 +293,5 @@ namespace TMech.Utils
             HttpClient?.Dispose();
         }
     }
+
 }

@@ -3,7 +3,6 @@ using SharpCompress.Common;
 using SharpCompress.Compressors.BZip2;
 using SharpCompress.Readers;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO;
@@ -11,18 +10,16 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace TMech.Core.Utils
+namespace TMech.Utils
 {
     /// <summary>
     /// <para>A service that allows you to maintain the latest <b>stable</b> version of Firefox for <c>Windows 64-bit</c> and <c>Linux 64-bit</c> in a directory of your choice. It handles checking versions as well as downloading, and extracting the latest release.</para>
-    /// <para>To learn more about Firefox for automation testing <see href="https://googleFirefoxlabs.github.io/Firefox-for-testing/">here</see>.</para>
     /// </summary>
     public sealed class FirefoxProvider : IDisposable
     {
@@ -30,9 +27,10 @@ namespace TMech.Core.Utils
 
         private readonly HttpClient HttpClient;
         private bool IsDisposed;
-        private const string BrowserVersionFileName = "BROWSER_VERSION";
-        private const string DriverVersionFileName = "DRIVER_VERSION";
         private const UnixFileMode UnixFilePermissions = UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.UserRead | UnixFileMode.GroupRead;
+
+        public const string BrowserVersionFileName = "BROWSER_VERSION";
+        public const string DriverVersionFileName = "DRIVER_VERSION";
 
         #region Github data structures
 
@@ -56,13 +54,6 @@ namespace TMech.Core.Utils
 
         #endregion
 
-        private record BinaryDownloadAssetData
-        {
-            public string ReadableVersion { get; init; } = string.Empty;
-            public double ComparableVersion { get; init; }
-            public Uri? DownloadUri { get; init; }
-        }
-
         /// <summary>Sets or gets the timeouts for requests as well as downloading data. Defaults to 30 seconds.</summary>
         public TimeSpan RequestTimeout { get => HttpClient.Timeout; set => HttpClient.Timeout = value; }
 
@@ -85,7 +76,7 @@ namespace TMech.Core.Utils
         }
 
         /// <summary>
-        /// Deletes all files and folders in <see cref="InstallLocation"/>.
+        /// Deletes all files and folders in <see cref="InstallLocation"/> but not the directory itself.
         /// </summary>
         public void ClearInstallLocation()
         {
@@ -150,9 +141,16 @@ namespace TMech.Core.Utils
             BinaryDownloadAssetData DownloadAssetData = GetBrowserVersionAndDownloadURL(platform);
             string CurrentVersion = GetCurrentInstalledBrowserVersion();
 
-            double CurrentVersionComparable = ParseVersionString(CurrentVersion);
+            Version CurrentVersionComparable = Version.FromString(CurrentVersion);
 
-            if (!force && CurrentVersionComparable >= DownloadAssetData.ComparableVersion) return false;
+            if (!force && CurrentVersionComparable.CompareTo(DownloadAssetData.Version) >= 0) return false;
+
+            string ExpectedMimeType = platform switch
+            {
+                Platform.Win64 => "application/x-msdos-program",
+                Platform.Linux64 => "application/x-tar",
+                _ => throw new InvalidDataException("I'm here to satisfy the compiler because this is already handled in the call to GetBrowserVersionAndDownloadURL...")
+            };
 
             var Request = new HttpRequestMessage()
             {
@@ -165,9 +163,9 @@ namespace TMech.Core.Utils
 
             string? ContentType = Response.Content.Headers.ContentType is null ? string.Empty : Response.Content.Headers.ContentType?.MediaType;
 
-            if (ContentType is null || (ContentType is not null && !ContentType.Equals("application/x-msdos-program", StringComparison.InvariantCulture)))
+            if (ContentType is null || (ContentType is not null && !ContentType.Equals(ExpectedMimeType, StringComparison.InvariantCulture)))
             {
-                throw new InvalidDataException($"A call to download the latest version of Firefox returned a response with 'Content-Type' not 'application/x-msdos-program' but rather '{ContentType}' (URL: {DownloadAssetData.DownloadUri})");
+                throw new InvalidDataException($"A call to download the latest version of Firefox returned a response with 'Content-Type' not '{ExpectedMimeType}' but rather '{ContentType}' (URL: {DownloadAssetData.DownloadUri})");
             }
 
             long? Downloadsize = Response.Content.Headers.ContentLength;
@@ -210,9 +208,9 @@ namespace TMech.Core.Utils
             BinaryDownloadAssetData DownloadAssetData = GetDriverVersionAndDownloadURL(platform);
             string CurrentVersion = GetCurrentInstalledDriverVersion();
 
-            double CurrentVersionComparable = ParseVersionString(CurrentVersion);
+            Version CurrentVersionComparable = Version.FromString(CurrentVersion);
 
-            if (!force && CurrentVersionComparable >= DownloadAssetData.ComparableVersion) return false;
+            if (!force && CurrentVersionComparable.CompareTo(DownloadAssetData.Version) >= 0) return false;
 
             var Request = new HttpRequestMessage()
             {
@@ -281,9 +279,6 @@ namespace TMech.Core.Utils
 
         #region PRIVATE
 
-        // Geckodriver's version format has historially always been "v0.00.0"
-        private static double ParseVersionString(string input) => input.Length == 0 ? 0.0d : double.Parse(input.TrimStart('v'));
-
         private void ExtractLinux64DriverToInstallLocation(MemoryStream driverArchiveStream)
         {
             using (var GZipStream = new GZipStream(driverArchiveStream, CompressionMode.Decompress))
@@ -310,9 +305,11 @@ namespace TMech.Core.Utils
             while (Reader.MoveToNextEntry())
             {
                 if (Reader.Entry.IsDirectory) continue;
-                if (!Reader.Entry.Key.StartsWith("core/")) continue;
+                string? EntryName = Reader.Entry.Key;
+                Debug.Assert(EntryName is not null);
+                if (EntryName.StartsWith("core/")) continue;
 
-                string SanitizedName = Reader.Entry.Key.Replace(WindowsArchiveDirectoryPrefix, "");
+                string SanitizedName = EntryName.Replace(WindowsArchiveDirectoryPrefix, "");
 
                 string FinalName = Path.Combine(InstallLocation.FullName, SanitizedName);
                 Debug.Assert(!string.IsNullOrWhiteSpace(FinalName));
@@ -388,7 +385,7 @@ namespace TMech.Core.Utils
             {
                 DownloadUri = DownloadUri,
                 ReadableVersion = VersionString,
-                ComparableVersion = ParseVersionString(VersionString)
+                Version = Version.FromString(VersionString)
             };
         }
 
@@ -398,11 +395,13 @@ namespace TMech.Core.Utils
             {
                 Platform.Win64 => "win64.zip",
                 Platform.Linux64 => "linux64.tar.gz",
-                _ => throw new InvalidDataException()
+                _ => throw new InvalidDataException($"Argument '{nameof(platform)}' does not have a valid value: " + platform)
             };
 
             var WebdriverGithubReleasesUri = new Uri("https://api.github.com/repos/mozilla/geckodriver/releases");
             var Request = new HttpRequestMessage(HttpMethod.Get, WebdriverGithubReleasesUri);
+            Request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
             var Response = HttpClient.Send(Request);
             Response.EnsureSuccessStatusCode();
 
@@ -417,41 +416,31 @@ namespace TMech.Core.Utils
             {
                 throw new InvalidDataException($"When deserializing the response JSON from a call to determine the latest webdriver version we got null or empty object (URL: {WebdriverGithubReleasesUri})");
             }
+            Debug.Assert(GithubResponseData is not null);
 
-            Tuple<double, string>[] Versions = new Tuple<double, string>[GithubResponseData!.Length];
-            Dictionary<string, GithubApiAsset[]> VersionWithAssetsManifest = new Dictionary<string, GithubApiAsset[]>(GithubResponseData.Length);
+            string LastVersionString = GithubResponseData[0].TagName;
+            Version LastParsedVersion = Version.FromString(LastVersionString);
+            GithubApiAsset[] NewestVersionAssets = GithubResponseData[0].Assets;
 
-            for (int Index = 0; Index < GithubResponseData.Length; Index++)
+            for (int Index = 1; Index < GithubResponseData.Length; Index++)
             {
                 string VersionString = GithubResponseData[Index].TagName;
-                double ParsedVersion = ParseVersionString(VersionString);
+                Version ParsedVersion = Version.FromString(VersionString);
 
-                if (ParsedVersion == 0.0d)
+                if (ParsedVersion.CompareTo(LastParsedVersion) > 0)
                 {
-                    throw new InvalidDataException($"When parsed the response JSON from a call to determine the latest webdriver version we got 0.0d as a parsed version number (GithubApiRelease.TagName) (URL: {WebdriverGithubReleasesUri})");
+                    LastVersionString = VersionString;
+                    LastParsedVersion = ParsedVersion;
+                    NewestVersionAssets = GithubResponseData[Index].Assets;
                 }
-
-                var NewEntry = new Tuple<double, string>
-                (
-                    ParsedVersion,
-                    VersionString
-                );
-
-                VersionWithAssetsManifest.Add(VersionString, GithubResponseData[Index].Assets);
-                Versions[Index] = NewEntry;
             }
 
-            Tuple<double, string>? NewestVersion = Versions.Max();
-            Debug.Assert(NewestVersion is not null);
-            Debug.Assert(NewestVersion.Item1 > 0);
-
-            GithubApiAsset[] NewestVersionAssets = VersionWithAssetsManifest[NewestVersion.Item2];
             string NewestVersionDownloadUrl = NewestVersionAssets.Single(x => x.Name.EndsWith(DriverFileNameFragment)).DownloadUrl;
 
             return new BinaryDownloadAssetData()
             {
-                ComparableVersion = NewestVersion.Item1,
-                ReadableVersion = NewestVersion.Item2,
+                Version = LastParsedVersion,
+                ReadableVersion = LastVersionString,
                 DownloadUri = new Uri(NewestVersionDownloadUrl)
             };
         }
@@ -515,4 +504,5 @@ namespace TMech.Core.Utils
 
         #endregion
     }
+
 }

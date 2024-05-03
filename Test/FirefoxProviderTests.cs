@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.IO;
-using TMech.Core.Utils;
+using TMech.Utils;
 
 namespace Tests
 {
@@ -107,6 +107,63 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.False);
+            }
+        }
+
+#warning For following tests we have to manually update the version string to match (or mismatch) the latest available version online
+        private const string IgnoreReason = "Requires manually updating the version string to match (or mismatch) the latest available version online";
+
+        [Ignore(IgnoreReason)]
+        [TestCase(Category = Category_Installed)]
+        public void Installed_Version_Driver_Newer()
+        {
+            bool Updated;
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v0.35.0");
+
+            using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
+            {
+                Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Win64);
+                Assert.That(Updated, Is.False);
+            }
+        }
+
+        [Ignore(IgnoreReason)]
+        [TestCase(Category = Category_Installed)]
+        public void Installed_Version_Driver_Older()
+        {
+            bool Updated;
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v0.33.0");
+
+            using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
+            {
+                Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Win64);
+                Assert.That(Updated, Is.True);
+            }
+        }
+
+        [Ignore(IgnoreReason)]
+        [TestCase(Category = Category_Installed)]
+        public void Installed_Version_Browser_Newer()
+        {
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "125.1.3");
+
+            using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
+            {
+                bool Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Win64);
+                Assert.That(Updated, Is.False);
+            }
+        }
+
+        [Ignore(IgnoreReason)]
+        [TestCase(Category = Category_Installed)]
+        public void Installed_Version_Browser_Older()
+        {
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "125.0.2");
+
+            using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
+            {
+                bool Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Win64);
+                Assert.That(Updated, Is.True);
             }
         }
 

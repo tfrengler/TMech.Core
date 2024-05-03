@@ -5,7 +5,7 @@ using TMech.Utils;
 
 namespace Tests
 {
-    [NonParallelizable]
+    [Parallelizable(ParallelScope.Fixtures)]
     [TestFixture]
     public sealed class ChromeProviderTests
     {
@@ -22,7 +22,8 @@ namespace Tests
             }
         }
 
-        private static readonly string ChromeDriverExeLocation = Path.Combine(GlobalSetup.ChromeTempInstallLocation.FullName, "chromedriver.exe");
+        private static readonly string ChromeDriverExeLocation = Path.Combine(GlobalSetup.ChromeTempInstallLocation.FullName, "chromedriver");
+        private static readonly string ChromeExeLocation = Path.Combine(GlobalSetup.ChromeTempInstallLocation.FullName, "chrome");
 
         #region INSTALLED
 
@@ -38,7 +39,8 @@ namespace Tests
 
                 bool Updated = ChromeProvider.DownloadLatestVersion(TMech.Platform.Win64);
                 Assert.That(Updated, Is.True);
-                Assert.That(File.Exists(ChromeDriverExeLocation), Is.True);
+                Assert.That(File.Exists(ChromeDriverExeLocation + ".exe"), Is.True);
+                Assert.That(File.Exists(ChromeExeLocation + ".exe"), Is.True);
 
                 CurrentVersion = ChromeProvider.GetCurrentInstalledVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -59,6 +61,8 @@ namespace Tests
 
                 bool Updated = ChromeProvider.DownloadLatestVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.True);
+                Assert.That(File.Exists(ChromeDriverExeLocation), Is.True);
+                Assert.That(File.Exists(ChromeExeLocation), Is.True);
 
                 CurrentVersion = ChromeProvider.GetCurrentInstalledVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -79,7 +83,7 @@ namespace Tests
 
                 bool Updated = ChromeProvider.DownloadLatestVersion(TMech.Platform.Win64, true);
                 Assert.That(Updated, Is.True);
-                Assert.That(File.Exists(ChromeDriverExeLocation), Is.False);
+                Assert.That(File.Exists(ChromeDriverExeLocation + ".exe"), Is.False);
             }
         }
 

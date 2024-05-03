@@ -5,7 +5,7 @@ using TMech.Utils;
 
 namespace Tests
 {
-    [NonParallelizable]
+    [Parallelizable(ParallelScope.Fixtures)]
     [TestFixture]
     public class FirefoxProviderTests
     {
@@ -22,6 +22,9 @@ namespace Tests
             }
         }
 
+        private static readonly string FirefoxBinaryLocation = Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, "firefox");
+        private static readonly string WebdriverBinaryLocation = Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, "geckodriver");
+
         #region INSTALLED
 
         private const string Category_Installed = "FirefoxProvider = Installed";
@@ -36,6 +39,7 @@ namespace Tests
 
                 bool Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Win64);
                 Assert.That(Updated, Is.True);
+                Assert.That(File.Exists(FirefoxBinaryLocation + ".exe"), Is.True);
 
                 CurrentVersion = FirefoxProvider.GetCurrentInstalledBrowserVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -43,6 +47,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Win64);
                 Assert.That(Updated, Is.False);
+                Assert.That(File.Exists(FirefoxBinaryLocation + ".exe"), Is.True);
             }
         }
 
@@ -58,6 +63,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Win64);
                 Assert.That(Updated, Is.True);
+                Assert.That(File.Exists(WebdriverBinaryLocation + ".exe"), Is.True);
 
                 CurrentVersion = FirefoxProvider.GetCurrentInstalledDriverVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -65,6 +71,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Win64);
                 Assert.That(Updated, Is.False);
+                Assert.That(File.Exists(WebdriverBinaryLocation + ".exe"), Is.True);
             }
         }
 
@@ -78,6 +85,7 @@ namespace Tests
 
                 bool Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.True);
+                Assert.That(File.Exists(FirefoxBinaryLocation), Is.True);
 
                 CurrentVersion = FirefoxProvider.GetCurrentInstalledBrowserVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -85,6 +93,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestBrowserVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.False);
+                Assert.That(File.Exists(FirefoxBinaryLocation), Is.True);
             }
         }
 
@@ -100,6 +109,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.True);
+                Assert.That(File.Exists(WebdriverBinaryLocation), Is.True);
 
                 CurrentVersion = FirefoxProvider.GetCurrentInstalledDriverVersion();
                 Console.WriteLine("Current version: " + CurrentVersion);
@@ -107,6 +117,7 @@ namespace Tests
 
                 Updated = FirefoxProvider.DownloadLatestDriverVersion(TMech.Platform.Linux64);
                 Assert.That(Updated, Is.False);
+                Assert.That(File.Exists(WebdriverBinaryLocation), Is.True);
             }
         }
 

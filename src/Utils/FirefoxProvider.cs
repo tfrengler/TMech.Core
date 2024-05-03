@@ -307,7 +307,7 @@ namespace TMech.Utils
                 if (Reader.Entry.IsDirectory) continue;
                 string? EntryName = Reader.Entry.Key;
                 Debug.Assert(EntryName is not null);
-                if (EntryName.StartsWith("core/")) continue;
+                if (!EntryName.StartsWith("core/")) continue;
 
                 string SanitizedName = EntryName.Replace(WindowsArchiveDirectoryPrefix, "");
 

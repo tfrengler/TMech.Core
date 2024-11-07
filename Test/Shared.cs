@@ -3,6 +3,7 @@ using OpenQA.Selenium.Chrome;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -81,13 +82,13 @@ namespace Tests
 
         public ChromeContext()
         {
-            var DriverService = ChromeDriverService.CreateDefaultService(@"C:\Temp\Chromium\chromedriver.exe");
+            var DriverService = ChromeDriverService.CreateDefaultService(GlobalSetup.ChromeDriverLocation.FullName);
             DriverService.Start();
 
             var Options = new ChromeOptions();
             Options.AddArgument("--window-size=2560,1440");
             Options.AddArgument("--headless=new");
-            Options.BinaryLocation = @"C:\Temp\Chromium\chrome.exe";
+            Options.BinaryLocation = GlobalSetup.ChromeLocation.FullName;
             var Webdriver = new ChromeDriver(DriverService, Options);
             Thread.Sleep(1000);
             Webdriver.Manage().Window.Maximize();
@@ -207,6 +208,16 @@ namespace Tests
             ChromeDriver.ExecuteAsyncScript(Script);
         }
 
+        public void JsRemoveSelectedOptions(string idOfElement, int timeoutInMS = 0)
+        {
+            StringBuilder JsFragments = new StringBuilder();
+            JsFragments.Append($"arguments[arguments.length - 1]();");
+            if (timeoutInMS > 0) JsFragments.Append($"await Wait({timeoutInMS});");
+
+            JsFragments.Append($"RemoveSelectedOptions(document.querySelector('#{idOfElement}'));");
+            ChromeDriver.ExecuteAsyncScript(JsFragments.ToString());
+        }
+
         #endregion
 
         #region TEARDOWN
@@ -237,10 +248,25 @@ public class GlobalSetup
 {
     public static TimeSpan DefaultFetchContextTimeout { get; } = TimeSpan.FromSeconds(5.0d);
     public static int FetchContextTimeoutMinus1Sec { get; } = 4000;
-    public static readonly FileInfo ChromeLocation = new FileInfo(@"C:\Temp\Chromium\chrome.exe");
-    public static readonly FileInfo ChromeDriverLocation = new FileInfo(@"C:\Temp\Chromium\chromedriver.exe");
-    public static DirectoryInfo FirefoxTempInstallLocation = new DirectoryInfo("C:/Temp/Firefox_Test");
-    public static DirectoryInfo ChromeTempInstallLocation = new DirectoryInfo("C:/Temp/Chrome_Test");
+    public static readonly FileInfo ChromeLocation = new FileInfo(@"C:\Dev\tools\chrome_test\chrome.exe");
+    public static readonly FileInfo ChromeDriverLocation = new FileInfo(@"C:\Dev\tools\chrome_test\chromedriver.exe");
+    public static DirectoryInfo FirefoxTempInstallLocation;
+    public static DirectoryInfo ChromeTempInstallLocation;
+    public static DirectoryInfo DownloadsFolder;
+
+    static GlobalSetup()
+    {
+        string? Here = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        Debug.Assert(!string.IsNullOrWhiteSpace(Here));
+
+        FirefoxTempInstallLocation = new(Path.Combine(Here + "/Firefox_Temp"));
+        ChromeTempInstallLocation = new(Path.Combine(Here + "/Chrome_Temp"));
+        DownloadsFolder = new(Path.Combine(Here + "/Downloads"));
+
+        FirefoxTempInstallLocation.Create();
+        ChromeTempInstallLocation.Create();
+        DownloadsFolder.Create();
+    }
 
     [OneTimeSetUp]
     public void BeforeAll()
@@ -252,6 +278,10 @@ public class GlobalSetup
     public void AfterAll()
     {
         Trace.Flush();
+
+        DownloadsFolder.Delete(true);
+        FirefoxTempInstallLocation.Delete(true);
+        ChromeTempInstallLocation.Delete(true);
 
         var AllProcesses = Process.GetProcesses();
         var BrowserDriverProcessNames = new string[] { "chromedriver", "geckodriver", "msedgedriver" };

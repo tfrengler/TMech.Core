@@ -24,6 +24,7 @@ namespace Tests
                 var InputAsString = Input.ToString(InputDateElement.ValueAttributeFormat);
 
                 Assert.DoesNotThrow(() => TheElement.AsInputDate().SetDate(Input, InputDateElement.ChromiumFormat));
+                Assert.DoesNotThrow(() => TheElement.AsInputDate().WithRobustSelection().SetDate(Input, InputDateElement.ChromiumFormat));
                 var Value = TheElement.GetAttribute("value");
 
                 Assert.That(Value, Is.EqualTo(InputAsString));
@@ -42,6 +43,7 @@ namespace Tests
                 var InputAsString = Input.ToString(InputDateElement.ValueAttributeFormat);
 
                 Assert.DoesNotThrow(() => TheElement.AsInputDate().SetDateByJS(Input));
+                Assert.DoesNotThrow(() => TheElement.AsInputDate().WithRobustSelection().SetDateByJS(Input));
                 var Value = TheElement.GetAttribute("value");
 
                 Assert.That(Value, Is.EqualTo(InputAsString));

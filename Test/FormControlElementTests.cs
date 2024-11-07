@@ -47,7 +47,7 @@ namespace Tests
                 var TestContext = FetchContext.Create(Chrome.ChromeDriver, GlobalSetup.DefaultFetchContextTimeout);
                 var TheElement = TestContext.Fetch(By.Id(JSElements.Context2File));
 
-                Assert.DoesNotThrow(() => TheElement.AsFormControl().UploadFile("C:/Temp/Chromium/VERSION"));
+                Assert.DoesNotThrow(() => TheElement.AsFormControl().UploadFile(Path.Combine(GlobalSetup.ChromeLocation.DirectoryName!, "ABOUT")));
                 Assert.Throws<FileNotFoundException>(() => TheElement.AsFormControl().UploadFile("C:/DoesNotExist.zip"));
                 //Assert.Throws<Exception>(() => TestContext.Fetch(By.Id(JSElements.Context2Textarea)).AsFormControl().UploadFile("C:/Temp/Chromium/VERSION"));
             }

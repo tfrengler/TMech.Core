@@ -205,3 +205,11 @@ const KillAndReRenderStaleContext = async function (timeout, newText)
             </ul>
         </div>`;
 }
+
+const RemoveSelectedOptions = async function (element, timeout) {
+
+    let Timeout = timeout && timeout > 0 ? timeout : 0;
+    if (Timeout) await Wait(timeout);
+
+    element.selectedIndex = -1;
+}

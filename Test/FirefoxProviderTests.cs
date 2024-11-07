@@ -121,15 +121,15 @@ namespace Tests
             }
         }
 
-#warning For following tests we have to manually update the version string to match (or mismatch) the latest available version online
+//#warning For following tests we have to manually update the version string to match (or mismatch) the latest available version online
         private const string IgnoreReason = "Requires manually updating the version string to match (or mismatch) the latest available version online";
 
-        [Ignore(IgnoreReason)]
+        //[Ignore(IgnoreReason)]
         [TestCase(Category = Category_Installed)]
         public void Installed_Version_Driver_Newer()
         {
             bool Updated;
-            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v0.35.0");
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v123.4.5");
 
             using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
             {
@@ -138,12 +138,12 @@ namespace Tests
             }
         }
 
-        [Ignore(IgnoreReason)]
+        //[Ignore(IgnoreReason)]
         [TestCase(Category = Category_Installed)]
         public void Installed_Version_Driver_Older()
         {
             bool Updated;
-            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v0.33.0");
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.DriverVersionFileName), "v0.01.0");
 
             using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
             {
@@ -152,11 +152,11 @@ namespace Tests
             }
         }
 
-        [Ignore(IgnoreReason)]
+        //[Ignore(IgnoreReason)]
         [TestCase(Category = Category_Installed)]
         public void Installed_Version_Browser_Newer()
         {
-            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "125.1.3");
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "1234.5.6");
 
             using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
             {
@@ -165,11 +165,11 @@ namespace Tests
             }
         }
 
-        [Ignore(IgnoreReason)]
+        //[Ignore(IgnoreReason)]
         [TestCase(Category = Category_Installed)]
         public void Installed_Version_Browser_Older()
         {
-            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "125.0.2");
+            File.WriteAllText(Path.Combine(GlobalSetup.FirefoxTempInstallLocation.FullName, FirefoxProvider.BrowserVersionFileName), "1.2.3");
 
             using (var FirefoxProvider = new FirefoxProvider(GlobalSetup.FirefoxTempInstallLocation))
             {

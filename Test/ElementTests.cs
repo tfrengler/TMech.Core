@@ -167,7 +167,7 @@ namespace Tests
                 var TheElement = TestContext.Fetch(By.Id(JSElements.Context2Radio1));
                 // <input id="Context2-Radio1-Id" checked type="radio" name="Context2-Radio-Name" value="Context2-Radio1-Value" />
 
-                IList<string> AttributeNames = null;
+                IList<string>? AttributeNames = null;
 
                 Assert.DoesNotThrow(() =>
                 {
@@ -190,7 +190,7 @@ namespace Tests
                 var TheElement = TestContext.Fetch(By.Id(JSElements.Context2Radio1));
                 // <input id="Context2-Radio1-Id" checked type="radio" name="Context2-Radio-Name" value="Context2-Radio1-Value" />
 
-                IDictionary<string,string> Attributes = null;
+                IDictionary<string,string>? Attributes = null;
 
                 Assert.DoesNotThrow(() =>
                 {
@@ -220,7 +220,7 @@ namespace Tests
                 var TheElement = TestContext.Fetch(By.Id(JSElements.Context3Div2));
                 // <div id="Context3-Div2-Id" class="Context3-Div2-Class1 Context3-Div2-Class2" data-data1="Context3-Div2-Data1" data-data2="Context3-Div2-Data2" />
 
-                IDictionary<string, string> DataAttributes = null;
+                IDictionary<string, string>? DataAttributes = null;
 
                 Assert.DoesNotThrow(() =>
                 {

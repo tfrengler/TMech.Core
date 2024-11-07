@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium.Chrome;
 using System;
-using System.IO;
 using TMech.Utils;
 
 namespace Tests
@@ -10,23 +9,31 @@ namespace Tests
     [TestFixture]
     public class WebdriverContextTests
     {
-        private readonly Uri RemoteUri = new Uri("http://192.168.178.85:4444");
-        private readonly DirectoryInfo DownloadsFolder = new System.IO.DirectoryInfo("C:/Temp");
         private System.Drawing.Size WindowSize = new System.Drawing.Size(1024, 768);
 
         private const string Category = "WebdriverContext";
         [TestCase(Category = Category)]
         public void Remote_DefaultInitialize()
         {
-            using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
-            Context.Initialize(true);
+            using (var DriverService = ChromeDriverService.CreateDefaultService(GlobalSetup.ChromeDriverLocation.FullName))
+            {
+                DriverService.Start();
+
+                using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, DriverService.ServiceUrl);
+                Context.Initialize(true);
+            }
         }
 
         [TestCase(Category = Category)]
         public void Remote_CustomInitialize()
         {
-            using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, RemoteUri);
-            Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, DownloadsFolder);
+            using (var DriverService = ChromeDriverService.CreateDefaultService(GlobalSetup.ChromeDriverLocation.FullName))
+            {
+                DriverService.Start();
+
+                using var Context = WebdriverContext.CreateRemote(TMech.Browser.CHROME, DriverService.ServiceUrl);
+                Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, GlobalSetup.DownloadsFolder);
+            }
         }
 
         [TestCase(Category = Category)]
@@ -48,7 +55,7 @@ namespace Tests
         public void Local_WithBrowser_NoBinary_CustomInitialize()
         {
             using var Context = WebdriverContext.CreateLocal(TMech.Browser.CHROME);
-            Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, DownloadsFolder);
+            Context.Initialize(true, WindowSize, new string[] { "--allow-file-access-from-files" }, GlobalSetup.DownloadsFolder);
         }
 
         [TestCase(Category = Category)]

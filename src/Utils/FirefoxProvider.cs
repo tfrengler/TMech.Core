@@ -145,13 +145,6 @@ namespace TMech.Utils
 
             if (!force && CurrentVersionComparable.CompareTo(DownloadAssetData.Version) >= 0) return false;
 
-            string ExpectedMimeType = platform switch
-            {
-                Platform.Win64 => "application/x-msdos-program",
-                Platform.Linux64 => "application/x-tar",
-                _ => throw new InvalidDataException("I'm here to satisfy the compiler because this is already handled in the call to GetBrowserVersionAndDownloadURL...")
-            };
-
             var Request = new HttpRequestMessage()
             {
                 RequestUri = DownloadAssetData.DownloadUri,
@@ -160,13 +153,6 @@ namespace TMech.Utils
 
             HttpResponseMessage Response = HttpClient.Send(Request);
             Response.EnsureSuccessStatusCode();
-
-            string? ContentType = Response.Content.Headers.ContentType is null ? string.Empty : Response.Content.Headers.ContentType?.MediaType;
-
-            if (ContentType is null || (ContentType is not null && !ContentType.Equals(ExpectedMimeType, StringComparison.InvariantCulture)))
-            {
-                throw new InvalidDataException($"A call to download the latest version of Firefox returned a response with 'Content-Type' not '{ExpectedMimeType}' but rather '{ContentType}' (URL: {DownloadAssetData.DownloadUri})");
-            }
 
             long? Downloadsize = Response.Content.Headers.ContentLength;
             if (Downloadsize is null)
@@ -307,7 +293,7 @@ namespace TMech.Utils
                 if (Reader.Entry.IsDirectory) continue;
                 string? EntryName = Reader.Entry.Key;
                 Debug.Assert(EntryName is not null);
-                if (!EntryName.StartsWith("core/")) continue;
+                if (!EntryName.StartsWith(WindowsArchiveDirectoryPrefix)) continue;
 
                 string SanitizedName = EntryName.Replace(WindowsArchiveDirectoryPrefix, "");
 
